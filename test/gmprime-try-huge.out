@@ -1,0 +1,997 @@
+: ./gmprime 8009271 1000005
+8009271 * 2 ^ 1000005 - 1 is prime
+: ./gmprime 1213 1000099
+1213 * 2 ^ 1000099 - 1 is prime
+: ./gmprime 345 1000251
+345 * 2 ^ 1000251 - 1 is prime
+: ./gmprime 1345 1000345
+1345 * 2 ^ 1000345 - 1 is prime
+: ./gmprime 497 1000426
+497 * 2 ^ 1000426 - 1 is prime
+: ./gmprime 819 1002205
+819 * 2 ^ 1002205 - 1 is prime
+: ./gmprime 735 1002509
+735 * 2 ^ 1002509 - 1 is prime
+: ./gmprime 1369 1002747
+1369 * 2 ^ 1002747 - 1 is prime
+: ./gmprime 1011 1002851
+1011 * 2 ^ 1002851 - 1 is prime
+: ./gmprime 853 1003063
+853 * 2 ^ 1003063 - 1 is prime
+: ./gmprime 279 1003356
+279 * 2 ^ 1003356 - 1 is prime
+: ./gmprime 729 1003373
+729 * 2 ^ 1003373 - 1 is prime
+: ./gmprime 1385 1003506
+1385 * 2 ^ 1003506 - 1 is prime
+: ./gmprime 1113 1004211
+1113 * 2 ^ 1004211 - 1 is prime
+: ./gmprime 271 1004527
+271 * 2 ^ 1004527 - 1 is prime
+: ./gmprime 159 1004981
+159 * 2 ^ 1004981 - 1 is prime
+: ./gmprime 1211 1006346
+1211 * 2 ^ 1006346 - 1 is prime
+: ./gmprime 903 1006812
+903 * 2 ^ 1006812 - 1 is prime
+: ./gmprime 993 1006834
+993 * 2 ^ 1006834 - 1 is prime
+: ./gmprime 109 1006883
+109 * 2 ^ 1006883 - 1 is prime
+: ./gmprime 921 1006898
+921 * 2 ^ 1006898 - 1 is prime
+: ./gmprime 6555 1008197
+6555 * 2 ^ 1008197 - 1 is prime
+: ./gmprime 695 1008532
+695 * 2 ^ 1008532 - 1 is prime
+: ./gmprime 1203 1008782
+1203 * 2 ^ 1008782 - 1 is prime
+: ./gmprime 663 1009098
+663 * 2 ^ 1009098 - 1 is prime
+: ./gmprime 1281 1009377
+1281 * 2 ^ 1009377 - 1 is prime
+: ./gmprime 281 1009502
+281 * 2 ^ 1009502 - 1 is prime
+: ./gmprime 9 1010277
+9 * 2 ^ 1010277 - 1 is prime
+: ./gmprime 811 1010419
+811 * 2 ^ 1010419 - 1 is prime
+: ./gmprime 899 1010544
+899 * 2 ^ 1010544 - 1 is prime
+: ./gmprime 1291 1010863
+1291 * 2 ^ 1010863 - 1 is prime
+: ./gmprime 285 1011134
+285 * 2 ^ 1011134 - 1 is prime
+: ./gmprime 6119 1011416
+6119 * 2 ^ 1011416 - 1 is prime
+: ./gmprime 513 1011678
+513 * 2 ^ 1011678 - 1 is prime
+: ./gmprime 469 1012299
+469 * 2 ^ 1012299 - 1 is prime
+: ./gmprime 947 1012854
+947 * 2 ^ 1012854 - 1 is prime
+: ./gmprime 669 1013592
+669 * 2 ^ 1013592 - 1 is prime
+: ./gmprime 691 1013875
+691 * 2 ^ 1013875 - 1 is prime
+: ./gmprime 2565 1014584
+2565 * 2 ^ 1014584 - 1 is prime
+: ./gmprime 1119 1015731
+1119 * 2 ^ 1015731 - 1 is prime
+: ./gmprime 1253 1015966
+1253 * 2 ^ 1015966 - 1 is prime
+: ./gmprime 1025 1016086
+1025 * 2 ^ 1016086 - 1 is prime
+: ./gmprime 585 1016441
+585 * 2 ^ 1016441 - 1 is prime
+: ./gmprime 2775 1016504
+2775 * 2 ^ 1016504 - 1 is prime
+: ./gmprime 139 1016619
+139 * 2 ^ 1016619 - 1 is prime
+: ./gmprime 425 1016928
+425 * 2 ^ 1016928 - 1 is prime
+: ./gmprime 471 1017306
+471 * 2 ^ 1017306 - 1 is prime
+: ./gmprime 829 1017747
+829 * 2 ^ 1017747 - 1 is prime
+: ./gmprime 1217 1017754
+1217 * 2 ^ 1017754 - 1 is prime
+: ./gmprime 727 1018709
+727 * 2 ^ 1018709 - 1 is prime
+: ./gmprime 41 1018778
+41 * 2 ^ 1018778 - 1 is prime
+: ./gmprime 641 1018986
+641 * 2 ^ 1018986 - 1 is prime
+: ./gmprime 357 1019004
+357 * 2 ^ 1019004 - 1 is prime
+: ./gmprime 2745 1019018
+2745 * 2 ^ 1019018 - 1 is prime
+: ./gmprime 205 1019679
+205 * 2 ^ 1019679 - 1 is prime
+: ./gmprime 549 1021391
+549 * 2 ^ 1021391 - 1 is prime
+: ./gmprime 441 1021669
+441 * 2 ^ 1021669 - 1 is prime
+: ./gmprime 1455 1023228
+1455 * 2 ^ 1023228 - 1 is prime
+: ./gmprime 1017 1023237
+1017 * 2 ^ 1023237 - 1 is prime
+: ./gmprime 1383 1023308
+1383 * 2 ^ 1023308 - 1 is prime
+: ./gmprime 437 1023678
+437 * 2 ^ 1023678 - 1 is prime
+: ./gmprime 407 1025072
+407 * 2 ^ 1025072 - 1 is prime
+: ./gmprime 411 1025451
+411 * 2 ^ 1025451 - 1 is prime
+: ./gmprime 1321 1025815
+1321 * 2 ^ 1025815 - 1 is prime
+: ./gmprime 47 1025950
+47 * 2 ^ 1025950 - 1 is prime
+: ./gmprime 1321 1026255
+1321 * 2 ^ 1026255 - 1 is prime
+: ./gmprime 91 1026521
+91 * 2 ^ 1026521 - 1 is prime
+: ./gmprime 217 1026869
+217 * 2 ^ 1026869 - 1 is prime
+: ./gmprime 51 1026910
+51 * 2 ^ 1026910 - 1 is prime
+: ./gmprime 1215 1027598
+1215 * 2 ^ 1027598 - 1 is prime
+: ./gmprime 51 1027635
+51 * 2 ^ 1027635 - 1 is prime
+: ./gmprime 741 1027639
+741 * 2 ^ 1027639 - 1 is prime
+: ./gmprime 1345 1028197
+1345 * 2 ^ 1028197 - 1 is prime
+: ./gmprime 1257 1028769
+1257 * 2 ^ 1028769 - 1 is prime
+: ./gmprime 555 1029045
+555 * 2 ^ 1029045 - 1 is prime
+: ./gmprime 1253 1030090
+1253 * 2 ^ 1030090 - 1 is prime
+: ./gmprime 703 1031219
+703 * 2 ^ 1031219 - 1 is prime
+: ./gmprime 727 1031225
+727 * 2 ^ 1031225 - 1 is prime
+: ./gmprime 531 1031987
+531 * 2 ^ 1031987 - 1 is prime
+: ./gmprime 181 1032023
+181 * 2 ^ 1032023 - 1 is prime
+: ./gmprime 8331405 1032051
+8331405 * 2 ^ 1032051 - 1 is prime
+: ./gmprime 317 1032378
+317 * 2 ^ 1032378 - 1 is prime
+: ./gmprime 1127 1033282
+1127 * 2 ^ 1033282 - 1 is prime
+: ./gmprime 31333 1033819
+31333 * 2 ^ 1033819 - 1 is prime
+: ./gmprime 10021 1033905
+10021 * 2 ^ 1033905 - 1 is prime
+: ./gmprime 85 1034069
+85 * 2 ^ 1034069 - 1 is prime
+: ./gmprime 783 1034775
+783 * 2 ^ 1034775 - 1 is prime
+: ./gmprime 2775 1035040
+2775 * 2 ^ 1035040 - 1 is prime
+: ./gmprime 581 1035962
+581 * 2 ^ 1035962 - 1 is prime
+: ./gmprime 2835 1036588
+2835 * 2 ^ 1036588 - 1 is prime
+: ./gmprime 165 1036898
+165 * 2 ^ 1036898 - 1 is prime
+: ./gmprime 453 1036971
+453 * 2 ^ 1036971 - 1 is prime
+: ./gmprime 5445 1037660
+5445 * 2 ^ 1037660 - 1 is prime
+: ./gmprime 513 1038382
+513 * 2 ^ 1038382 - 1 is prime
+: ./gmprime 573 1039963
+573 * 2 ^ 1039963 - 1 is prime
+: ./gmprime 121 1039965
+121 * 2 ^ 1039965 - 1 is prime
+: ./gmprime 1081 1040241
+1081 * 2 ^ 1040241 - 1 is prime
+: ./gmprime 1077 1040457
+1077 * 2 ^ 1040457 - 1 is prime
+: ./gmprime 2745 1040743
+2745 * 2 ^ 1040743 - 1 is prime
+: ./gmprime 593 1040744
+593 * 2 ^ 1040744 - 1 is prime
+: ./gmprime 489 1041511
+489 * 2 ^ 1041511 - 1 is prime
+: ./gmprime 1115 1041684
+1115 * 2 ^ 1041684 - 1 is prime
+: ./gmprime 151515 1043018
+151515 * 2 ^ 1043018 - 1 is prime
+: ./gmprime 105 1043063
+105 * 2 ^ 1043063 - 1 is prime
+: ./gmprime 11 1044086
+11 * 2 ^ 1044086 - 1 is prime
+: ./gmprime 1175 1045302
+1175 * 2 ^ 1045302 - 1 is prime
+: ./gmprime 1119 1045491
+1119 * 2 ^ 1045491 - 1 is prime
+: ./gmprime 1221 1045870
+1221 * 2 ^ 1045870 - 1 is prime
+: ./gmprime 1293 1047087
+1293 * 2 ^ 1047087 - 1 is prime
+: ./gmprime 12345 1047788
+12345 * 2 ^ 1047788 - 1 is prime
+: ./gmprime 1035 1047941
+1035 * 2 ^ 1047941 - 1 is prime
+: ./gmprime 4935 1049124
+4935 * 2 ^ 1049124 - 1 is prime
+: ./gmprime 7603 1050875
+7603 * 2 ^ 1050875 - 1 is prime
+: ./gmprime 511 1051499
+511 * 2 ^ 1051499 - 1 is prime
+: ./gmprime 705 1052759
+705 * 2 ^ 1052759 - 1 is prime
+: ./gmprime 525 1053162
+525 * 2 ^ 1053162 - 1 is prime
+: ./gmprime 149 1054092
+149 * 2 ^ 1054092 - 1 is prime
+: ./gmprime 895 1054515
+895 * 2 ^ 1054515 - 1 is prime
+: ./gmprime 10963 1054519
+10963 * 2 ^ 1054519 - 1 is prime
+: ./gmprime 833 1054916
+833 * 2 ^ 1054916 - 1 is prime
+: ./gmprime 864316301 1055106
+864316301 * 2 ^ 1055106 - 1 is prime
+: ./gmprime 1053 1055210
+1053 * 2 ^ 1055210 - 1 is prime
+: ./gmprime 511 1055989
+511 * 2 ^ 1055989 - 1 is prime
+: ./gmprime 1233 1058123
+1233 * 2 ^ 1058123 - 1 is prime
+: ./gmprime 1125 1059317
+1125 * 2 ^ 1059317 - 1 is prime
+: ./gmprime 41 1059562
+41 * 2 ^ 1059562 - 1 is prime
+: ./gmprime 1039 1059897
+1039 * 2 ^ 1059897 - 1 is prime
+: ./gmprime 217 1059961
+217 * 2 ^ 1059961 - 1 is prime
+: ./gmprime 1127 1062804
+1127 * 2 ^ 1062804 - 1 is prime
+: ./gmprime 523 1062947
+523 * 2 ^ 1062947 - 1 is prime
+: ./gmprime 549 1063317
+549 * 2 ^ 1063317 - 1 is prime
+: ./gmprime 473 1063908
+473 * 2 ^ 1063908 - 1 is prime
+: ./gmprime 1179 1064004
+1179 * 2 ^ 1064004 - 1 is prime
+: ./gmprime 257 1064062
+257 * 2 ^ 1064062 - 1 is prime
+: ./gmprime 175 1065181
+175 * 2 ^ 1065181 - 1 is prime
+: ./gmprime 9101981 1065578
+9101981 * 2 ^ 1065578 - 1 is prime
+: ./gmprime 133 1065655
+133 * 2 ^ 1065655 - 1 is prime
+: ./gmprime 1365 1067007
+1365 * 2 ^ 1067007 - 1 is prime
+: ./gmprime 1347 1069594
+1347 * 2 ^ 1069594 - 1 is prime
+: ./gmprime 2203 1069647
+2203 * 2 ^ 1069647 - 1 is prime
+: ./gmprime 107 1070256
+107 * 2 ^ 1070256 - 1 is prime
+: ./gmprime 503 1070448
+503 * 2 ^ 1070448 - 1 is prime
+: ./gmprime 1335 1070581
+1335 * 2 ^ 1070581 - 1 is prime
+: ./gmprime 209826493 1071303
+209826493 * 2 ^ 1071303 - 1 is prime
+: ./gmprime 1335 1071490
+1335 * 2 ^ 1071490 - 1 is prime
+: ./gmprime 1357 1071729
+1357 * 2 ^ 1071729 - 1 is prime
+: ./gmprime 1307 1072286
+1307 * 2 ^ 1072286 - 1 is prime
+: ./gmprime 1019 1072448
+1019 * 2 ^ 1072448 - 1 is prime
+: ./gmprime 2925 1074630
+2925 * 2 ^ 1074630 - 1 is prime
+: ./gmprime 1381 1074877
+1381 * 2 ^ 1074877 - 1 is prime
+: ./gmprime 73 1075107
+73 * 2 ^ 1075107 - 1 is prime
+: ./gmprime 1299 1075497
+1299 * 2 ^ 1075497 - 1 is prime
+: ./gmprime 55 1075711
+55 * 2 ^ 1075711 - 1 is prime
+: ./gmprime 1135 1076065
+1135 * 2 ^ 1076065 - 1 is prime
+: ./gmprime 150847 1076441
+150847 * 2 ^ 1076441 - 1 is prime
+: ./gmprime 435 1077677
+435 * 2 ^ 1077677 - 1 is prime
+: ./gmprime 103 1077739
+103 * 2 ^ 1077739 - 1 is prime
+: ./gmprime 1245 1078901
+1245 * 2 ^ 1078901 - 1 is prime
+: ./gmprime 569 1079392
+569 * 2 ^ 1079392 - 1 is prime
+: ./gmprime 1155 1082878
+1155 * 2 ^ 1082878 - 1 is prime
+: ./gmprime 1187 1083320
+1187 * 2 ^ 1083320 - 1 is prime
+: ./gmprime 15 1084010
+15 * 2 ^ 1084010 - 1 is prime
+: ./gmprime 412717 1084409
+412717 * 2 ^ 1084409 - 1 is prime
+: ./gmprime 157 1085121
+157 * 2 ^ 1085121 - 1 is prime
+: ./gmprime 1147 1085617
+1147 * 2 ^ 1085617 - 1 is prime
+: ./gmprime 87 1089098
+87 * 2 ^ 1089098 - 1 is prime
+: ./gmprime 475 1089627
+475 * 2 ^ 1089627 - 1 is prime
+: ./gmprime 2145 1090281
+2145 * 2 ^ 1090281 - 1 is prime
+: ./gmprime 1077 1091113
+1077 * 2 ^ 1091113 - 1 is prime
+: ./gmprime 1173 1091159
+1173 * 2 ^ 1091159 - 1 is prime
+: ./gmprime 1335 1092015
+1335 * 2 ^ 1092015 - 1 is prime
+: ./gmprime 503 1092022
+503 * 2 ^ 1092022 - 1 is prime
+: ./gmprime 393 1095688
+393 * 2 ^ 1095688 - 1 is prime
+: ./gmprime 183 1095896
+183 * 2 ^ 1095896 - 1 is prime
+: ./gmprime 451 1096999
+451 * 2 ^ 1096999 - 1 is prime
+: ./gmprime 1297 1097337
+1297 * 2 ^ 1097337 - 1 is prime
+: ./gmprime 1151 1097414
+1151 * 2 ^ 1097414 - 1 is prime
+: ./gmprime 289 1098117
+289 * 2 ^ 1098117 - 1 is prime
+: ./gmprime 57 1098272
+57 * 2 ^ 1098272 - 1 is prime
+: ./gmprime 173 1098914
+173 * 2 ^ 1098914 - 1 is prime
+: ./gmprime 573 1101398
+573 * 2 ^ 1101398 - 1 is prime
+: ./gmprime 1369 1103183
+1369 * 2 ^ 1103183 - 1 is prime
+: ./gmprime 1029 1103372
+1029 * 2 ^ 1103372 - 1 is prime
+: ./gmprime 117 1104138
+117 * 2 ^ 1104138 - 1 is prime
+: ./gmprime 11 1104606
+11 * 2 ^ 1104606 - 1 is prime
+: ./gmprime 469 1105345
+469 * 2 ^ 1105345 - 1 is prime
+: ./gmprime 11533 1106943
+11533 * 2 ^ 1106943 - 1 is prime
+: ./gmprime 99 1106989
+99 * 2 ^ 1106989 - 1 is prime
+: ./gmprime 1389 1108211
+1389 * 2 ^ 1108211 - 1 is prime
+: ./gmprime 27 1108214
+27 * 2 ^ 1108214 - 1 is prime
+: ./gmprime 1277 1108678
+1277 * 2 ^ 1108678 - 1 is prime
+: ./gmprime 1159 1109421
+1159 * 2 ^ 1109421 - 1 is prime
+: ./gmprime 1065 1109681
+1065 * 2 ^ 1109681 - 1 is prime
+: ./gmprime 1275 1110019
+1275 * 2 ^ 1110019 - 1 is prime
+: ./gmprime 339 1110323
+339 * 2 ^ 1110323 - 1 is prime
+: ./gmprime 57 1110980
+57 * 2 ^ 1110980 - 1 is prime
+: ./gmprime 353 1114356
+353 * 2 ^ 1114356 - 1 is prime
+: ./gmprime 33 1115902
+33 * 2 ^ 1115902 - 1 is prime
+: ./gmprime 1125 1116485
+1125 * 2 ^ 1116485 - 1 is prime
+: ./gmprime 315 1116547
+315 * 2 ^ 1116547 - 1 is prime
+: ./gmprime 1095 1119088
+1095 * 2 ^ 1119088 - 1 is prime
+: ./gmprime 1005 1119171
+1005 * 2 ^ 1119171 - 1 is prime
+: ./gmprime 1255 1119475
+1255 * 2 ^ 1119475 - 1 is prime
+: ./gmprime 10021 1119611
+10021 * 2 ^ 1119611 - 1 is prime
+: ./gmprime 87 1120006
+87 * 2 ^ 1120006 - 1 is prime
+: ./gmprime 119 1122472
+119 * 2 ^ 1122472 - 1 is prime
+: ./gmprime 1015 1122611
+1015 * 2 ^ 1122611 - 1 is prime
+: ./gmprime 61 1124049
+61 * 2 ^ 1124049 - 1 is prime
+: ./gmprime 1365 1125937
+1365 * 2 ^ 1125937 - 1 is prime
+: ./gmprime 842711 1126138
+842711 * 2 ^ 1126138 - 1 is prime
+: ./gmprime 1077 1126434
+1077 * 2 ^ 1126434 - 1 is prime
+: ./gmprime 63 1126551
+63 * 2 ^ 1126551 - 1 is prime
+: ./gmprime 1287 1127953
+1287 * 2 ^ 1127953 - 1 is prime
+: ./gmprime 1035 1129901
+1035 * 2 ^ 1129901 - 1 is prime
+: ./gmprime 1095 1130677
+1095 * 2 ^ 1130677 - 1 is prime
+: ./gmprime 1235 1132210
+1235 * 2 ^ 1132210 - 1 is prime
+: ./gmprime 1127 1133758
+1127 * 2 ^ 1133758 - 1 is prime
+: ./gmprime 405 1133886
+405 * 2 ^ 1133886 - 1 is prime
+: ./gmprime 1065 1134545
+1065 * 2 ^ 1134545 - 1 is prime
+: ./gmprime 1065 1135016
+1065 * 2 ^ 1135016 - 1 is prime
+: ./gmprime 1089 1135049
+1089 * 2 ^ 1135049 - 1 is prime
+: ./gmprime 1231 1135229
+1231 * 2 ^ 1135229 - 1 is prime
+: ./gmprime 504613 1136459
+504613 * 2 ^ 1136459 - 1 is prime
+: ./gmprime 313 1137387
+313 * 2 ^ 1137387 - 1 is prime
+: ./gmprime 500621 1138518
+500621 * 2 ^ 1138518 - 1 is prime
+: ./gmprime 149 1138804
+149 * 2 ^ 1138804 - 1 is prime
+: ./gmprime 209826493 1140855
+209826493 * 2 ^ 1140855 - 1 is prime
+: ./gmprime 115 1141719
+115 * 2 ^ 1141719 - 1 is prime
+: ./gmprime 31 1142093
+31 * 2 ^ 1142093 - 1 is prime
+: ./gmprime 443 1143154
+443 * 2 ^ 1143154 - 1 is prime
+: ./gmprime 350107 1144101
+350107 * 2 ^ 1144101 - 1 is prime
+: ./gmprime 405 1146533
+405 * 2 ^ 1146533 - 1 is prime
+: ./gmprime 1485 1153738
+1485 * 2 ^ 1153738 - 1 is prime
+: ./gmprime 14533 1153951
+14533 * 2 ^ 1153951 - 1 is prime
+: ./gmprime 152713 1154707
+152713 * 2 ^ 1154707 - 1 is prime
+: ./gmprime 301 1157561
+301 * 2 ^ 1157561 - 1 is prime
+: ./gmprime 339 1161347
+339 * 2 ^ 1161347 - 1 is prime
+: ./gmprime 55 1162155
+55 * 2 ^ 1162155 - 1 is prime
+: ./gmprime 175 1162313
+175 * 2 ^ 1162313 - 1 is prime
+: ./gmprime 165 1162671
+165 * 2 ^ 1162671 - 1 is prime
+: ./gmprime 27 1163629
+27 * 2 ^ 1163629 - 1 is prime
+: ./gmprime 21 1170083
+21 * 2 ^ 1170083 - 1 is prime
+: ./gmprime 227 1170724
+227 * 2 ^ 1170724 - 1 is prime
+: ./gmprime 617 1175468
+617 * 2 ^ 1175468 - 1 is prime
+: ./gmprime 345 1175842
+345 * 2 ^ 1175842 - 1 is prime
+: ./gmprime 24161 1181162
+24161 * 2 ^ 1181162 - 1 is prime
+: ./gmprime 21 1182083
+21 * 2 ^ 1182083 - 1 is prime
+: ./gmprime 201 1183137
+201 * 2 ^ 1183137 - 1 is prime
+: ./gmprime 71009 1185112
+71009 * 2 ^ 1185112 - 1 is prime
+: ./gmprime 181 1186763
+181 * 2 ^ 1186763 - 1 is prime
+: ./gmprime 83 1192950
+83 * 2 ^ 1192950 - 1 is prime
+: ./gmprime 105 1193072
+105 * 2 ^ 1193072 - 1 is prime
+: ./gmprime 5 1194164
+5 * 2 ^ 1194164 - 1 is prime
+: ./gmprime 1195203 1195203
+1195203 * 2 ^ 1195203 - 1 is prime
+: ./gmprime 34693 1197131
+34693 * 2 ^ 1197131 - 1 is prime
+: ./gmprime 502541 1199930
+502541 * 2 ^ 1199930 - 1 is prime
+: ./gmprime 3 1201046
+3 * 2 ^ 1201046 - 1 is prime
+: ./gmprime 861 1203625
+861 * 2 ^ 1203625 - 1 is prime
+: ./gmprime 269 1204740
+269 * 2 ^ 1204740 - 1 is prime
+: ./gmprime 209 1207276
+209 * 2 ^ 1207276 - 1 is prime
+: ./gmprime 155 1207424
+155 * 2 ^ 1207424 - 1 is prime
+: ./gmprime 333 1209174
+333 * 2 ^ 1209174 - 1 is prime
+: ./gmprime 117 1210282
+117 * 2 ^ 1210282 - 1 is prime
+: ./gmprime 153 1215327
+153 * 2 ^ 1215327 - 1 is prime
+: ./gmprime 183 1219415
+183 * 2 ^ 1219415 - 1 is prime
+: ./gmprime 8331405 1224804
+8331405 * 2 ^ 1224804 - 1 is prime
+: ./gmprime 123 1225115
+123 * 2 ^ 1225115 - 1 is prime
+: ./gmprime 287 1226144
+287 * 2 ^ 1226144 - 1 is prime
+: ./gmprime 349 1228715
+349 * 2 ^ 1228715 - 1 is prime
+: ./gmprime 19581121 1229561
+19581121 * 2 ^ 1229561 - 1 is prime
+: ./gmprime 51 1231665
+51 * 2 ^ 1231665 - 1 is prime
+: ./gmprime 3 1232255
+3 * 2 ^ 1232255 - 1 is prime
+: ./gmprime 13483 1233619
+13483 * 2 ^ 1233619 - 1 is prime
+: ./gmprime 185 1234730
+185 * 2 ^ 1234730 - 1 is prime
+: ./gmprime 165 1235490
+165 * 2 ^ 1235490 - 1 is prime
+: ./gmprime 159 1240229
+159 * 2 ^ 1240229 - 1 is prime
+: ./gmprime 27029 1240648
+27029 * 2 ^ 1240648 - 1 is prime
+: ./gmprime 123 1241690
+123 * 2 ^ 1241690 - 1 is prime
+: ./gmprime 169 1243903
+169 * 2 ^ 1243903 - 1 is prime
+: ./gmprime 153 1245154
+153 * 2 ^ 1245154 - 1 is prime
+: ./gmprime 391 1247959
+391 * 2 ^ 1247959 - 1 is prime
+: ./gmprime 201 1249030
+201 * 2 ^ 1249030 - 1 is prime
+: ./gmprime 181 1250169
+181 * 2 ^ 1250169 - 1 is prime
+: ./gmprime 80857169 1251076
+80857169 * 2 ^ 1251076 - 1 is prime
+: ./gmprime 27 1253870
+27 * 2 ^ 1253870 - 1 is prime
+: ./gmprime 119 1256952
+119 * 2 ^ 1256952 - 1 is prime
+: ./gmprime 49 1257295
+49 * 2 ^ 1257295 - 1 is prime
+: ./gmprime 1 1257787
+1 * 2 ^ 1257787 - 1 is prime
+: ./gmprime 2084259 1257787
+2084259 * 2 ^ 1257787 - 1 is prime
+: ./gmprime 26869 1257787
+26869 * 2 ^ 1257787 - 1 is prime
+: ./gmprime 11 1261478
+11 * 2 ^ 1261478 - 1 is prime
+: ./gmprime 193 1268399
+193 * 2 ^ 1268399 - 1 is prime
+: ./gmprime 1268979 1268979
+1268979 * 2 ^ 1268979 - 1 is prime
+: ./gmprime 251 1269198
+251 * 2 ^ 1269198 - 1 is prime
+: ./gmprime 147 1273684
+147 * 2 ^ 1273684 - 1 is prime
+: ./gmprime 205 1275889
+205 * 2 ^ 1275889 - 1 is prime
+: ./gmprime 349 1278551
+349 * 2 ^ 1278551 - 1 is prime
+: ./gmprime 181 1281453
+181 * 2 ^ 1281453 - 1 is prime
+: ./gmprime 131 1283258
+131 * 2 ^ 1283258 - 1 is prime
+: ./gmprime 138847 1283793
+138847 * 2 ^ 1283793 - 1 is prime
+: ./gmprime 135 1288177
+135 * 2 ^ 1288177 - 1 is prime
+: ./gmprime 99 1292395
+99 * 2 ^ 1292395 - 1 is prime
+: ./gmprime 399 1293056
+399 * 2 ^ 1293056 - 1 is prime
+: ./gmprime 393 1297402
+393 * 2 ^ 1297402 - 1 is prime
+: ./gmprime 8331405 1297878
+8331405 * 2 ^ 1297878 - 1 is prime
+: ./gmprime 205 1300401
+205 * 2 ^ 1300401 - 1 is prime
+: ./gmprime 117 1302764
+117 * 2 ^ 1302764 - 1 is prime
+: ./gmprime 19581121 1303821
+19581121 * 2 ^ 1303821 - 1 is prime
+: ./gmprime 19 1325245
+19 * 2 ^ 1325245 - 1 is prime
+: ./gmprime 8331405 1331801
+8331405 * 2 ^ 1331801 - 1 is prime
+: ./gmprime 87 1332741
+87 * 2 ^ 1332741 - 1 is prime
+: ./gmprime 81 1335675
+81 * 2 ^ 1335675 - 1 is prime
+: ./gmprime 15 1344313
+15 * 2 ^ 1344313 - 1 is prime
+: ./gmprime 1087 1346917
+1087 * 2 ^ 1346917 - 1 is prime
+: ./gmprime 8331405 1353931
+8331405 * 2 ^ 1353931 - 1 is prime
+: ./gmprime 299 1355004
+299 * 2 ^ 1355004 - 1 is prime
+: ./gmprime 63 1357156
+63 * 2 ^ 1357156 - 1 is prime
+: ./gmprime 87 1358189
+87 * 2 ^ 1358189 - 1 is prime
+: ./gmprime 107 1362654
+107 * 2 ^ 1362654 - 1 is prime
+: ./gmprime 171 1362662
+171 * 2 ^ 1362662 - 1 is prime
+: ./gmprime 321 1363671
+321 * 2 ^ 1363671 - 1 is prime
+: ./gmprime 77 1365452
+77 * 2 ^ 1365452 - 1 is prime
+: ./gmprime 245 1367128
+245 * 2 ^ 1367128 - 1 is prime
+: ./gmprime 243 1368212
+243 * 2 ^ 1368212 - 1 is prime
+: ./gmprime 195 1369746
+195 * 2 ^ 1369746 - 1 is prime
+: ./gmprime 321 1371846
+321 * 2 ^ 1371846 - 1 is prime
+: ./gmprime 147 1374216
+147 * 2 ^ 1374216 - 1 is prime
+: ./gmprime 65 1374574
+65 * 2 ^ 1374574 - 1 is prime
+: ./gmprime 129 1376223
+129 * 2 ^ 1376223 - 1 is prime
+: ./gmprime 89 1383108
+89 * 2 ^ 1383108 - 1 is prime
+: ./gmprime 113 1389674
+113 * 2 ^ 1389674 - 1 is prime
+: ./gmprime 77 1390004
+77 * 2 ^ 1390004 - 1 is prime
+: ./gmprime 85 1395605
+85 * 2 ^ 1395605 - 1 is prime
+: ./gmprime 192089 1395688
+192089 * 2 ^ 1395688 - 1 is prime
+: ./gmprime 1 1398269
+1 * 2 ^ 1398269 - 1 is prime
+: ./gmprime 1564347 1398269
+1564347 * 2 ^ 1398269 - 1 is prime
+: ./gmprime 127 1398889
+127 * 2 ^ 1398889 - 1 is prime
+: ./gmprime 55 1406997
+55 * 2 ^ 1406997 - 1 is prime
+: ./gmprime 105 1407665
+105 * 2 ^ 1407665 - 1 is prime
+: ./gmprime 339 1410789
+339 * 2 ^ 1410789 - 1 is prime
+: ./gmprime 149797 1414137
+149797 * 2 ^ 1414137 - 1 is prime
+: ./gmprime 61 1416365
+61 * 2 ^ 1416365 - 1 is prime
+: ./gmprime 9 1419855
+9 * 2 ^ 1419855 - 1 is prime
+: ./gmprime 65 1421088
+65 * 2 ^ 1421088 - 1 is prime
+: ./gmprime 113 1425998
+113 * 2 ^ 1425998 - 1 is prime
+: ./gmprime 243 1431443
+243 * 2 ^ 1431443 - 1 is prime
+: ./gmprime 19 1434165
+19 * 2 ^ 1434165 - 1 is prime
+: ./gmprime 83 1437882
+83 * 2 ^ 1437882 - 1 is prime
+: ./gmprime 8331405 1445428
+8331405 * 2 ^ 1445428 - 1 is prime
+: ./gmprime 21 1452771
+21 * 2 ^ 1452771 - 1 is prime
+: ./gmprime 83 1455358
+83 * 2 ^ 1455358 - 1 is prime
+: ./gmprime 83 1461350
+83 * 2 ^ 1461350 - 1 is prime
+: ./gmprime 99 1461496
+99 * 2 ^ 1461496 - 1 is prime
+: ./gmprime 165 1462368
+165 * 2 ^ 1462368 - 1 is prime
+: ./gmprime 105 1467388
+105 * 2 ^ 1467388 - 1 is prime
+: ./gmprime 77 1467554
+77 * 2 ^ 1467554 - 1 is prime
+: ./gmprime 1467763 1467763
+1467763 * 2 ^ 1467763 - 1 is prime
+: ./gmprime 325627 1472117
+325627 * 2 ^ 1472117 - 1 is prime
+: ./gmprime 327 1473201
+327 * 2 ^ 1473201 - 1 is prime
+: ./gmprime 69 1473217
+69 * 2 ^ 1473217 - 1 is prime
+: ./gmprime 333 1474766
+333 * 2 ^ 1474766 - 1 is prime
+: ./gmprime 29 1478344
+29 * 2 ^ 1478344 - 1 is prime
+: ./gmprime 9 1481821
+9 * 2 ^ 1481821 - 1 is prime
+: ./gmprime 8922449 1482840
+8922449 * 2 ^ 1482840 - 1 is prime
+: ./gmprime 57 1486214
+57 * 2 ^ 1486214 - 1 is prime
+: ./gmprime 61 1487125
+61 * 2 ^ 1487125 - 1 is prime
+: ./gmprime 2232007 1490605
+2232007 * 2 ^ 1490605 - 1 is prime
+: ./gmprime 907 1501169
+907 * 2 ^ 1501169 - 1 is prime
+: ./gmprime 65 1505640
+65 * 2 ^ 1505640 - 1 is prime
+: ./gmprime 301 1514873
+301 * 2 ^ 1514873 - 1 is prime
+: ./gmprime 19709699 1521540
+19709699 * 2 ^ 1521540 - 1 is prime
+: ./gmprime 165 1521629
+165 * 2 ^ 1521629 - 1 is prime
+: ./gmprime 121 1526097
+121 * 2 ^ 1526097 - 1 is prime
+: ./gmprime 247 1529485
+247 * 2 ^ 1529485 - 1 is prime
+: ./gmprime 8331405 1534807
+8331405 * 2 ^ 1534807 - 1 is prime
+: ./gmprime 234847 1535589
+234847 * 2 ^ 1535589 - 1 is prime
+: ./gmprime 63 1535612
+63 * 2 ^ 1535612 - 1 is prime
+: ./gmprime 333 1537644
+333 * 2 ^ 1537644 - 1 is prime
+: ./gmprime 315 1539539
+315 * 2 ^ 1539539 - 1 is prime
+: ./gmprime 83 1540750
+83 * 2 ^ 1540750 - 1 is prime
+: ./gmprime 95 1543676
+95 * 2 ^ 1543676 - 1 is prime
+: ./gmprime 161 1553570
+161 * 2 ^ 1553570 - 1 is prime
+: ./gmprime 69 1566375
+69 * 2 ^ 1566375 - 1 is prime
+: ./gmprime 311 1581686
+311 * 2 ^ 1581686 - 1 is prime
+: ./gmprime 289 1587151
+289 * 2 ^ 1587151 - 1 is prime
+: ./gmprime 121 1589157
+121 * 2 ^ 1589157 - 1 is prime
+: ./gmprime 99 1591984
+99 * 2 ^ 1591984 - 1 is prime
+: ./gmprime 110413 1591999
+110413 * 2 ^ 1591999 - 1 is prime
+: ./gmprime 737 1592724
+737 * 2 ^ 1592724 - 1 is prime
+: ./gmprime 58753 1594323
+58753 * 2 ^ 1594323 - 1 is prime
+: ./gmprime 31 1611311
+31 * 2 ^ 1611311 - 1 is prime
+: ./gmprime 87 1616138
+87 * 2 ^ 1616138 - 1 is prime
+: ./gmprime 63 1626259
+63 * 2 ^ 1626259 - 1 is prime
+: ./gmprime 113 1627496
+113 * 2 ^ 1627496 - 1 is prime
+: ./gmprime 53 1632590
+53 * 2 ^ 1632590 - 1 is prime
+: ./gmprime 209 1647640
+209 * 2 ^ 1647640 - 1 is prime
+: ./gmprime 469949 1649228
+469949 * 2 ^ 1649228 - 1 is prime
+: ./gmprime 69 1649423
+69 * 2 ^ 1649423 - 1 is prime
+: ./gmprime 61 1654383
+61 * 2 ^ 1654383 - 1 is prime
+: ./gmprime 63 1659338
+63 * 2 ^ 1659338 - 1 is prime
+: ./gmprime 19 1684813
+19 * 2 ^ 1684813 - 1 is prime
+: ./gmprime 20049 1687252
+20049 * 2 ^ 1687252 - 1 is prime
+: ./gmprime 121 1695499
+121 * 2 ^ 1695499 - 1 is prime
+: ./gmprime 233 1700734
+233 * 2 ^ 1700734 - 1 is prime
+: ./gmprime 283 1702599
+283 * 2 ^ 1702599 - 1 is prime
+: ./gmprime 113 1721438
+113 * 2 ^ 1721438 - 1 is prime
+: ./gmprime 253 1722623
+253 * 2 ^ 1722623 - 1 is prime
+: ./gmprime 61 1734983
+61 * 2 ^ 1734983 - 1 is prime
+: ./gmprime 5077 1753317
+5077 * 2 ^ 1753317 - 1 is prime
+: ./gmprime 31 1755317
+31 * 2 ^ 1755317 - 1 is prime
+: ./gmprime 243 1777467
+243 * 2 ^ 1777467 - 1 is prime
+: ./gmprime 99 1777688
+99 * 2 ^ 1777688 - 1 is prime
+: ./gmprime 357659 1779748
+357659 * 2 ^ 1779748 - 1 is prime
+: ./gmprime 1045 1800025
+1045 * 2 ^ 1800025 - 1 is prime
+: ./gmprime 417643 1800787
+417643 * 2 ^ 1800787 - 1 is prime
+: ./gmprime 1193 1801112
+1193 * 2 ^ 1801112 - 1 is prime
+: ./gmprime 301 1801207
+301 * 2 ^ 1801207 - 1 is prime
+: ./gmprime 33 1813526
+33 * 2 ^ 1813526 - 1 is prime
+: ./gmprime 35 1817486
+35 * 2 ^ 1817486 - 1 is prime
+: ./gmprime 15 1837873
+15 * 2 ^ 1837873 - 1 is prime
+: ./gmprime 137 1849238
+137 * 2 ^ 1849238 - 1 is prime
+: ./gmprime 87 1852590
+87 * 2 ^ 1852590 - 1 is prime
+: ./gmprime 8331405 1858587
+8331405 * 2 ^ 1858587 - 1 is prime
+: ./gmprime 21 1872923
+21 * 2 ^ 1872923 - 1 is prime
+: ./gmprime 345067 1876573
+345067 * 2 ^ 1876573 - 1 is prime
+: ./gmprime 27 1902689
+27 * 2 ^ 1902689 - 1 is prime
+: ./gmprime 243 1923567
+243 * 2 ^ 1923567 - 1 is prime
+: ./gmprime 121 1954243
+121 * 2 ^ 1954243 - 1 is prime
+: ./gmprime 148323 1973319
+148323 * 2 ^ 1973319 - 1 is prime
+: ./gmprime 25 1977369
+25 * 2 ^ 1977369 - 1 is prime
+: ./gmprime 8331405 1984565
+8331405 * 2 ^ 1984565 - 1 is prime
+: ./gmprime 137137 1993201
+137137 * 2 ^ 1993201 - 1 is prime
+: ./gmprime 467917 1993429
+467917 * 2 ^ 1993429 - 1 is prime
+: ./gmprime 8331405 1993674
+8331405 * 2 ^ 1993674 - 1 is prime
+: ./gmprime 251749 2013995
+251749 * 2 ^ 2013995 - 1 is prime
+: ./gmprime 121 2033941
+121 * 2 ^ 2033941 - 1 is prime
+: ./gmprime 75 2050637
+75 * 2 ^ 2050637 - 1 is prime
+: ./gmprime 9 2060941
+: ./gmprime 9 2060941
+9 * 2 ^ 2060941 - 1 is prime
+: ./gmprime 1003 2076535
+1003 * 2 ^ 2076535 - 1 is prime
+: ./gmprime 57 2103370
+57 * 2 ^ 2103370 - 1 is prime
+: ./gmprime 75 2130432
+75 * 2 ^ 2130432 - 1 is prime
+: ./gmprime 61 2134577
+61 * 2 ^ 2134577 - 1 is prime
+: ./gmprime 23 2141626
+23 * 2 ^ 2141626 - 1 is prime
+: ./gmprime 69 2174213
+69 * 2 ^ 2174213 - 1 is prime
+: ./gmprime 196597 2178109
+196597 * 2 ^ 2178109 - 1 is prime
+: ./gmprime 114487 2198389
+114487 * 2 ^ 2198389 - 1 is prime
+: ./gmprime 5077 2198565
+5077 * 2 ^ 2198565 - 1 is prime
+: ./gmprime 165 2207550
+165 * 2 ^ 2207550 - 1 is prime
+: ./gmprime 67 2215581
+67 * 2 ^ 2215581 - 1 is prime
+: ./gmprime 450457 2307905
+450457 * 2 ^ 2307905 - 1 is prime
+: ./gmprime 3 2312734
+3 * 2 ^ 2312734 - 1 is prime
+: ./gmprime 15 2323205
+15 * 2 ^ 2323205 - 1 is prime
+: ./gmprime 275293 2335007
+275293 * 2 ^ 2335007 - 1 is prime
+: ./gmprime 127 2346377
+127 * 2 ^ 2346377 - 1 is prime
+: ./gmprime 1183953 2367907
+1183953 * 2 ^ 2367907 - 1 is prime
+: ./gmprime 737 2382804
+737 * 2 ^ 2382804 - 1 is prime
+: ./gmprime 5 2460482
+5 * 2 ^ 2460482 - 1 is prime
+: ./gmprime 26773 2465343
+26773 * 2 ^ 2465343 - 1 is prime
+: ./gmprime 165 2500130
+165 * 2 ^ 2500130 - 1 is prime
+: ./gmprime 75 2562382
+75 * 2 ^ 2562382 - 1 is prime
+: ./gmprime 13 2606075
+13 * 2 ^ 2606075 - 1 is prime
+: ./gmprime 1243 2623707
+1243 * 2 ^ 2623707 - 1 is prime
+: ./gmprime 342673 2639439
+342673 * 2 ^ 2639439 - 1 is prime
+: ./gmprime 17 2721830
+17 * 2 ^ 2721830 - 1 is prime
+: ./gmprime 1 2976221
+1 * 2 ^ 2976221 - 1 is prime
+: ./gmprime 4348099 2976221
+4348099 * 2 ^ 2976221 - 1 is prime
+: ./gmprime 1095 2992587
+1095 * 2 ^ 2992587 - 1 is prime
+: ./gmprime 1 3021377
+1 * 2 ^ 3021377 - 1 is prime
+: ./gmprime 383731 3021377
+383731 * 2 ^ 3021377 - 1 is prime
+: ./gmprime 5 3059698
+5 * 2 ^ 3059698 - 1 is prime
+: ./gmprime 3 3136255
+3 * 2 ^ 3136255 - 1 is prime
+: ./gmprime 113983 3201175
+113983 * 2 ^ 3201175 - 1 is prime
+: ./gmprime 9 3259381
+9 * 2 ^ 3259381 - 1 is prime
+: ./gmprime 3139 3321905
+3139 * 2 ^ 3321905 - 1 is prime
+: ./gmprime 59 3408416
+59 * 2 ^ 3408416 - 1 is prime
+: ./gmprime 191249 3417696
+191249 * 2 ^ 3417696 - 1 is prime
+: ./gmprime 428639 3506452
+428639 * 2 ^ 3506452 - 1 is prime
+: ./gmprime 5 3569154
+5 * 2 ^ 3569154 - 1 is prime
+: ./gmprime 485767 3609357
+485767 * 2 ^ 3609357 - 1 is prime
+: ./gmprime 65531 3629342
+65531 * 2 ^ 3629342 - 1 is prime
+: ./gmprime 938237 3752950
+938237 * 2 ^ 3752950 - 1 is prime
+: ./gmprime 415267 3771929
+415267 * 2 ^ 3771929 - 1 is prime
+: ./gmprime 123547 3804809
+: ./gmprime 415267 3771929
+415267 * 2 ^ 3771929 - 1 is prime
+: ./gmprime 123547 3804809
+: ./gmprime 123547 3804809
+123547 * 2 ^ 3804809 - 1 is prime
+: ./gmprime 3 4235414
+3 * 2 ^ 4235414 - 1 is prime
+: ./gmprime 141941 4299438
+141941 * 2 ^ 4299438 - 1 is prime
+: ./gmprime 353159 4331116
+353159 * 2 ^ 4331116 - 1 is prime
+: ./gmprime 3 6090515
+3 * 2 ^ 6090515 - 1 is prime
+: ./gmprime 1 6972593
+: ./gmprime-v2 1 6972593
+: ./gmprime-v2 1 6972593
+: ./gmprime-v2 1 6972593
+1 * 2 ^ 6972593 - 1 is prime
+: ./gmprime-v2 1 13466917
+1 * 2 ^ 13466917 - 1 is prime
+: ./gmprime-v2 1 20996011
+: ./gmprime 1 20996011 < /dev/null
+: ./gmprime 1 20996011 < /dev/null
+: ./gmprime 1 20996011 < /dev/null
+1 * 2 ^ 20996011 - 1 is prime
+
+real	44338m27.937s
+user	44335m26.644s
+sys	2m24.003s
+: ./gmprime 1 24036583 < /dev/null
+: ./gmprime 1 24036583 < /dev/null
