@@ -1,3 +1,7 @@
+/*
+ *
+ * 			Credits: Konstantin Simeonov
+ */
 #include <stdio.h>
 #include <limits.h>
 #include "lucas.h"

@@ -1,3 +1,7 @@
+/*
+ *
+ * 			Credits: Konstantin Simeonov
+ */
 #ifndef GEN_U2_LIBRARY_H
 #define GEN_U2_LIBRARY_H
 #include <stdint.h>

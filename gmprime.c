@@ -13,10 +13,6 @@
  * NOTE: This is for demo purposes only.  One should certailny improve
  *	 the robustness and performance of this code!!!
  *
- * NOTE: This code uses a hack to compute the initial lucas term u(2).
- *	 It forms a pipe to the program calc and uses that program's
- *	 lucas.cal resource file to compute the initial value.
- *
  *	 For more information on calc, see:
  *
  *	     http://www.isthe.com/chongo/tech/comp/calc/index.html
