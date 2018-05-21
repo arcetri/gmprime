@@ -18,7 +18,6 @@
  *	     http://www.isthe.com/chongo/tech/comp/calc/index.html
  *
  *	 The source to calc is freely available via links from the above URL.
- *	 This code assumes CALC_PROGRAM is defined where calc is installed.
  *
  * Exit codes:
  *
@@ -28,11 +27,7 @@
  *
  * NOTE: Comments in this source use 2^n to mean 2 raised to the power of n, not xor.
  *
- * @(#) $Revision$
- * @(#) $Id$
- * @(#) $Source$
- *
- * Copyright (c) 2013,2017 by Landon Curt Noll.  All Rights Reserved.
+ * Copyright (c) 2013,2017,2018 by Landon Curt Noll.  All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and
  * its documentation for any purpose and without fee is hereby granted,
@@ -67,8 +62,8 @@
 #include <getopt.h>
 
 #include "lucas.h"
+
 /* constants */
-#define CALC_PROGRAM "/usr/bin/calc"
 #define MAX_H_N_LEN BUFSIZ	/* more than enougn for h and n that we care about */
 
 /* globals */ char *program;	      /* our name */
@@ -87,6 +82,11 @@ struct h_n {
 };
 static const struct h_n small_h_n[] = {
     {1, 2},	/* 1 * 2 ^ 2 - 1 = 3 is prime */
+
+    {0, 0}	/* MUST BE THE LAST ENTRY! */
+};
+static const struct h_n composite_h_n[] = {
+    {1, 1},	/* 1 * 2 ^ 1 - 1 = 1 is not prime */
 
     {0, 0}	/* MUST BE THE LAST ENTRY! */
 };
@@ -119,12 +119,12 @@ main(int argc, char *argv[])
     unsigned long orig_n;	/* original valye of n */
     char h_str[MAX_H_N_LEN+1];	/* h as a string */
     char n_str[MAX_H_N_LEN+1];	/* h as a string */
-    int h_len;		/* length of string in h_str */
-    int n_len;		/* length of string in n_str */
+    int h_len;			/* length of string in h_str */
+    int n_len;			/* length of string in n_str */
     const struct h_n *h_n_p;	/* pointer into small_h_n */
-    int verbose = 0;	/* be verbose */
-    int calc_mode = 0;	/* output calc code so calc can verify partial results */
-    extern int optind;	/* argv index of the next arg */
+    int verbose = 0;		/* be verbose */
+    int calc_mode = 0;		/* output calc code so calc can verify partial results */
+    extern int optind;		/* argv index of the next arg */
 
     /*
      * parse args
@@ -152,7 +152,7 @@ main(int argc, char *argv[])
     h_arg = argv[1];
     errno = 0;
     h = strtoul(h_arg, NULL, 0);
-    if (errno != 0 || h <= 0) {
+    if (strchr(h_arg, '-') != NULL || errno != 0 || h <= 0) {
 	fprintf(stderr, "%s: FATAL: h must an integer > 0\n", program);
 	fprintf(stderr, "usage: %s %s", program, usage);
 	exit(4);
@@ -160,7 +160,7 @@ main(int argc, char *argv[])
     n_arg = argv[2];
     errno = 0;
     n = strtoul(n_arg, NULL, 0);
-    if (errno != 0 || n <= 0) {
+    if (strchr(n_arg, '-') != NULL || errno != 0 || n <= 0) {
 	fprintf(stderr, "%s: FATAL: n must an integer > 0\n", program);
 	fprintf(stderr, "usage: %s %s", program, usage);
 	exit(5);
@@ -231,6 +231,28 @@ main(int argc, char *argv[])
     }
 
     /*
+     * firewall - catch the special cases for small composites
+     *
+     * NOTE: This case normally fails the standard Riesel test because n is too small.
+     */
+    for (h_n_p = composite_h_n; h_n_p->h > 0 && h_n_p->n > 0; ++h_n_p) {
+	if (h == h_n_p->h && n == h_n_p->n) {
+	    if (calc_mode) {
+		printf("read lucas;\n");
+		printf("print \"lucas( %ld , %lu )\",;", h, n);
+		printf("ret = lucas(%ld , %ld);\n", h, n);
+		printf("if (ret == 0) { print \"returned composite\"; } else { print \"failed returning\", ret; };\n");
+		printf("print \"%s: origianl test: %ld * 2 ^ %ld - 1 =\", (%ld * 2 ^ %ld - 1);\n",
+			program, orig_h, orig_n, orig_h, orig_n);
+		printf("print \"%s: %ld * 2 ^ %ld - 1 is composite\";\n", program, orig_h, orig_n);
+	    } else {
+		printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
+	    }
+	    exit(1);
+	}
+    }
+
+    /*
      * firewall - h*2^n-1 is not a multiple of 3
      *
      * We can check this quickly by looking at h and n.
@@ -253,7 +275,6 @@ main(int argc, char *argv[])
 	    printf("if (mod3 == 0) { print \"value mod 3:\", mod3; } else { print \"failed: mod 3 != 0:\", mod3 };\n");
 	    printf("print \"%s: %ld * 2 ^ %ld - 1 is composite\";\n", program, orig_h, orig_n);
 	} else {
-	    printf("%s: %ld * 2 ^ %ld - 1 is a multiple of 3 > 3\n", program, orig_h, orig_n);
 	    printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	}
 	exit(1);
@@ -272,6 +293,7 @@ main(int argc, char *argv[])
     mpz_init(K);
     mpz_init(J_div_h);
     mpz_init(J_mod_h);
+
     /*
      * compute h*2^n-1 - our test candidate
      */
@@ -383,6 +405,7 @@ main(int argc, char *argv[])
 	    printf("  quit \"bad -2 calculation\";\n");
 	    printf("}\n");
 	}
+
 	/*
 	 * mod h*2^n-1 via modified "shift and add"
 	 *
