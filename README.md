@@ -65,23 +65,31 @@ This code was written to help people understand how to implement the Lucas-Lehme
 
 ```sh
 # compile
+#
 $ make all
 
 # perform some consistency checks
+#
 $ make check
 $ make small_composite_check
+#
 # see the Makefile for an more extensive list of check rules
 
 # Run gmprime with any h and n
+#
 $ ./gmprime 9448 9999
 $ ./gmprime 1 23209
 $ ./gmprime 391581 216193
 
 # Run with verbose mode
+#
 $ ./gmprime -v 199815 163
 $ ./gmprime -v 3545685 3187
 
 # Use calc to verify correctness of the calculation
+# This part requires calc to be installed and in your path
+#     See https://github.com/lcn2/calc
+#
 $ ./gmprime -c 418791945 71 | calc -p
 $ ./gmprime -c 2566851867 5634 | calc -p
 ```
