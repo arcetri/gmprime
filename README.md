@@ -9,7 +9,7 @@ The main motivations for why gmprime has been written are:
 
 - Implement in C, the Lucas-Lehmer-Riesel test as implemented by [lucas.cal][lucas.cal].
 - Implement optimized search for _V(1)_ values that satisfy the [Rödseth][rodseth] criteria.
-- Implement the Lucas-Lehmer-Riesel primality test using [GNU MP][gmump] library calls.
+- Implement the Lucas-Lehmer-Riesel primality test using [GNU MP][gmp] library calls.
 - Allow for detailed debugging of each computational sub-step including each square, subtract 2 and modulus operations.
 - Allow to check the correctness of computational sub-step using [calc][calc].
 
@@ -47,8 +47,8 @@ Generating _U(n)_ is the most time consuming sub-step of the Lucas-Lehmer-Riesel
 as it requires to compute _n_ terms of the
 {_U<sub>i<sub>_} sequence where each term depends on the previous term (which makes it hard to parallelize).
 
-At the time this code was written, squaring using [FLINT][flint] was FLINT is slightly faster than [GNU MP][gmump].
-For this code, we chose to use [GNU MP][gmump] as that library is more commonly used.
+At the time this code was written, squaring using [FLINT][flint] was FLINT is slightly faster than [GNU MP][gmp].
+For this code, we chose to use [GNU MP][gmp] as that library is more commonly used.
 For an example of an implementation using [FLINT][flint], see [goprime][goprime]'s C implementation.
 
 You may wish to explore other squaring solutions. We expect that approaches based on [Crandall's transform][crandall],
