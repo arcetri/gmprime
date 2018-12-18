@@ -34,6 +34,10 @@
 #include <sys/time.h>
 
 
+/* checkpoint fornmat version */
+#define CHECKPT_FMT_VERSION		(2)	// current version of checkpoint files
+
+
 /* internal error codes */
 #define CHECKPT_NULL_PTR		(-1)	// NULL point argument found
 #define CHECKPT_WRITE_ERRNO_ZERO_ERR	(-2)	// write() error with zero errno
@@ -62,8 +66,8 @@ struct prime_stats {
 
 
 /* extern functions */
-extern void initialize_start_of_run_stats(void);
-extern void initialize_start_of_test_stats(void);
+extern void initialize_beginrun_stats(void);
+extern void initialize_teststart_stats(void);
 extern void update_stats(void);
 extern int write_calc_mpz_hex(FILE *stream, char *name, const mpz_t value);
 extern int write_calc_int64_t(FILE *stream, char *name, const int64_t value);

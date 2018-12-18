@@ -296,7 +296,7 @@ main(int argc, char *argv[])
      * initialize prime stats for start of test
      */
     if (write_stats) {
-	initialize_start_of_test_stats();
+	initialize_teststart_stats();
     }
 
     /*

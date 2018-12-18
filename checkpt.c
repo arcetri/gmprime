@@ -45,11 +45,11 @@
 /*
  * prime test stats
  */
-static struct prime_stats start_of_run;		/* program start (or program restore) initial prime stats value */
-static struct prime_stats start_of_test;	/* start of the primality test initial prime stats value */
-static struct prime_stats as_of_now;		/* prime stats as of now */
-static struct prime_stats checkpt_stats;	/* prime stats since program start or program restore */
-static struct prime_stats total_stats;		/* prime stats since start of the primality test */
+static struct prime_stats beginrun;		/* program start (or program restore) initial prime stats value */
+static struct prime_stats teststart;		/* start of the primality test initial prime stats value */
+static struct prime_stats current;		/* prime stats as of now */
+static struct prime_stats lastckpt;		/* prime stats since program start or program restore */
+static struct prime_stats total;		/* prime stats since start of the primality test */
 
 
 /*
@@ -131,49 +131,49 @@ load_prime_stats(struct prime_stats *ptr)
 
 
 /*
- * initialize_start_of_run_stats - setup prime stats for the start of this run
+ * initialize_beginrun_stats - setup prime stats for the start of this run
  */
 void
-initialize_start_of_run_stats(void)
+initialize_beginrun_stats(void)
 {
     /* initialize start of run prime stats */
-    load_prime_stats(&start_of_run);
+    load_prime_stats(&beginrun);
 
     /* clear checkpoint prime stats for this run */
-    zerosize_stats(&checkpt_stats);
+    zerosize_stats(&lastckpt);
 
     /* initialize checkpoint prime stats for this run */
-    checkpt_stats.now = start_of_run.now;
-    checkpt_stats.ru_maxrss = start_of_run.ru_maxrss;
+    lastckpt.now = beginrun.now;
+    lastckpt.ru_maxrss = beginrun.ru_maxrss;
 
-    /* start_of_run has been initialized */
+    /* beginrun has been initialized */
     return;
 }
 
 
 /*
- * initialize_start_of_test_stats - setup prime stats for the start a primality test
+ * initialize_teststart_stats - setup prime stats for the start a primality test
  *
- * NOTE: This function also calls start_of_run() so that both
- * 	 start_of_run and start_of_test are initized to the same value.
+ * NOTE: This function also calls beginrun() so that both
+ * 	 beginrun and teststart are initized to the same value.
  */
 void
-initialize_start_of_test_stats(void)
+initialize_teststart_stats(void)
 {
     /* initialize prime stats for the start of this run */
-    initialize_start_of_run_stats();
+    initialize_beginrun_stats();
 
-    /* clear start_of_test stats */
-    zerosize_stats(&start_of_test);
-    start_of_test.now = start_of_run.now;
-    start_of_test.ru_maxrss = start_of_run.ru_maxrss;
+    /* clear teststart stats */
+    zerosize_stats(&teststart);
+    teststart.now = beginrun.now;
+    teststart.ru_maxrss = beginrun.ru_maxrss;
 
-    /* clear total_stats */
-    total_stats = checkpt_stats;
-    total_stats.now = start_of_run.now;
-    total_stats.ru_maxrss = start_of_run.ru_maxrss;
+    /* clear total */
+    total = lastckpt;
+    total.now = beginrun.now;
+    total.ru_maxrss = beginrun.ru_maxrss;
 
-    /* start_of_test and start_of_run have been initialized */
+    /* teststart and beginrun have been initialized */
     return;
 }
 
@@ -190,95 +190,95 @@ update_stats(void)
     struct timeval diff;	// difference between now and start
 
     /* load prime stats for this checkpoint */
-    load_prime_stats(&as_of_now);
+    load_prime_stats(&current);
 
     /*
      * update now
      */
-    checkpt_stats.now = as_of_now.now;
-    total_stats.now = as_of_now.now;
+    lastckpt.now = current.now;
+    total.now = current.now;
 
     /*
      * update user CPU time used
      */
-    if (!timercmp(&as_of_now.ru_utime, &start_of_run.ru_utime, <)) {
-	timersub(&as_of_now.ru_utime, &start_of_run.ru_utime, &diff);
+    if (!timercmp(&current.ru_utime, &beginrun.ru_utime, <)) {
+	timersub(&current.ru_utime, &beginrun.ru_utime, &diff);
     } else {
 	warn(__func__, "user CPU time went backwards, assuming 0 difference");
 	timerclear(&diff);
     }
-    checkpt_stats.ru_utime = diff;
-    timeradd(&start_of_test.ru_utime, &diff, &total_stats.ru_utime);
+    lastckpt.ru_utime = diff;
+    timeradd(&teststart.ru_utime, &diff, &total.ru_utime);
 
     /*
      * update system CPU time used
      */
-    if (!timercmp(&as_of_now.ru_stime, &start_of_run.ru_stime, <)) {
-	timersub(&as_of_now.ru_stime, &start_of_run.ru_stime, &diff);
+    if (!timercmp(&current.ru_stime, &beginrun.ru_stime, <)) {
+	timersub(&current.ru_stime, &beginrun.ru_stime, &diff);
     } else {
 	warn(__func__, "user system CPU time went backwards, assuming 0 difference");
 	timerclear(&diff);
     }
-    checkpt_stats.ru_stime = diff;
-    timeradd(&start_of_test.ru_stime, &diff, &total_stats.ru_stime);
+    lastckpt.ru_stime = diff;
+    timeradd(&teststart.ru_stime, &diff, &total.ru_stime);
 
     /*
      * update wall clock time used
      */
-    if (!timercmp(&as_of_now.now, &start_of_run.now, <)) {
-	timersub(&as_of_now.now, &start_of_run.now, &diff);
+    if (!timercmp(&current.now, &beginrun.now, <)) {
+	timersub(&current.now, &beginrun.now, &diff);
     } else {
 	warn(__func__, "user wall clock time went backwards, assuming 0 difference");
 	timerclear(&diff);
     }
-    checkpt_stats.wall_clock = diff;
-    timeradd(&start_of_test.wall_clock, &diff, &total_stats.wall_clock);
+    lastckpt.wall_clock = diff;
+    timeradd(&teststart.wall_clock, &diff, &total.wall_clock);
 
     /*
      * update maximum resident set size used in kilobytes
      */
-    if (as_of_now.ru_maxrss > start_of_run.ru_maxrss) {
-	checkpt_stats.ru_maxrss = as_of_now.ru_maxrss;
+    if (current.ru_maxrss > beginrun.ru_maxrss) {
+	lastckpt.ru_maxrss = current.ru_maxrss;
     }
-    if (as_of_now.ru_maxrss > start_of_test.ru_maxrss) {
-	total_stats.ru_maxrss = as_of_now.ru_maxrss;
+    if (current.ru_maxrss > teststart.ru_maxrss) {
+	total.ru_maxrss = current.ru_maxrss;
     }
 
     /*
      * update page reclaims (soft page faults)
      */
-    checkpt_stats.ru_minflt = as_of_now.ru_minflt - start_of_run.ru_minflt;
-    total_stats.ru_minflt = start_of_test.ru_minflt + checkpt_stats.ru_minflt;
+    lastckpt.ru_minflt = current.ru_minflt - beginrun.ru_minflt;
+    total.ru_minflt = teststart.ru_minflt + lastckpt.ru_minflt;
 
     /*
      * update page faults (hard page faults)
      */
-    checkpt_stats.ru_majflt = as_of_now.ru_majflt - start_of_run.ru_majflt;
-    total_stats.ru_majflt = start_of_test.ru_majflt + checkpt_stats.ru_majflt;
+    lastckpt.ru_majflt = current.ru_majflt - beginrun.ru_majflt;
+    total.ru_majflt = teststart.ru_majflt + lastckpt.ru_majflt;
 
     /*
      * update block input operations
      */
-    checkpt_stats.ru_inblock = as_of_now.ru_inblock - start_of_run.ru_inblock;
-    total_stats.ru_inblock = start_of_test.ru_inblock + checkpt_stats.ru_inblock;
+    lastckpt.ru_inblock = current.ru_inblock - beginrun.ru_inblock;
+    total.ru_inblock = teststart.ru_inblock + lastckpt.ru_inblock;
 
     /*
      * update block output operations
      */
-    checkpt_stats.ru_oublock = as_of_now.ru_oublock - start_of_run.ru_oublock;
-    total_stats.ru_oublock = start_of_test.ru_oublock + checkpt_stats.ru_oublock;
+    lastckpt.ru_oublock = current.ru_oublock - beginrun.ru_oublock;
+    total.ru_oublock = teststart.ru_oublock + lastckpt.ru_oublock;
 
     /*
      * update voluntary context switches
      */
-    checkpt_stats.ru_nvcsw = as_of_now.ru_nvcsw - start_of_run.ru_nvcsw;
-    total_stats.ru_nvcsw = start_of_test.ru_nvcsw + checkpt_stats.ru_nvcsw;
+    lastckpt.ru_nvcsw = current.ru_nvcsw - beginrun.ru_nvcsw;
+    total.ru_nvcsw = teststart.ru_nvcsw + lastckpt.ru_nvcsw;
 
     /*
      * update involuntary context switches
      */
-    checkpt_stats.ru_nivcsw = as_of_now.ru_nivcsw - start_of_run.ru_nivcsw;
-    total_stats.ru_nivcsw = start_of_test.ru_nivcsw + checkpt_stats.ru_nivcsw;
+    lastckpt.ru_nivcsw = current.ru_nivcsw - beginrun.ru_nivcsw;
+    total.ru_nivcsw = teststart.ru_nivcsw + lastckpt.ru_nivcsw;
 
     /* stats and been updated */
     return;
@@ -1179,47 +1179,47 @@ write_calc_prime_stats(FILE *stream)
     }
 
     /*
-     * write start_of_run stats
+     * write beginrun stats
      */
-    ret = write_calc_prime_stats_ptr(stream, "start_of_run", &start_of_run);
+    ret = write_calc_prime_stats_ptr(stream, "beginrun", &beginrun);
     if (ret != 0) {
-	warn(__func__, "write start_of_run: write_calc_prime_stats_ptr return: %d != 0", ret);
+	warn(__func__, "write beginrun: write_calc_prime_stats_ptr return: %d != 0", ret);
 	return ret;
     }
 
     /*
-     * write start_of_test stats
+     * write teststart stats
      */
-    ret = write_calc_prime_stats_ptr(stream, "start_of_test", &start_of_test);
+    ret = write_calc_prime_stats_ptr(stream, "teststart", &teststart);
     if (ret != 0) {
-	warn(__func__, "write start_of_test: write_calc_prime_stats_ptr return: %d != 0", ret);
+	warn(__func__, "write teststart: write_calc_prime_stats_ptr return: %d != 0", ret);
 	return ret;
     }
 
     /*
-     * write as_of_now stats
+     * write current stats
      */
-    ret = write_calc_prime_stats_ptr(stream, "as_of_now", &as_of_now);
+    ret = write_calc_prime_stats_ptr(stream, "current", &current);
     if (ret != 0) {
-	warn(__func__, "write as_of_now: write_calc_prime_stats_ptr return: %d != 0", ret);
+	warn(__func__, "write current: write_calc_prime_stats_ptr return: %d != 0", ret);
 	return ret;
     }
 
     /*
-     * write checkpt_stats stats
+     * write lastckpt stats
      */
-    ret = write_calc_prime_stats_ptr(stream, "checkpt_stats", &checkpt_stats);
+    ret = write_calc_prime_stats_ptr(stream, "lastckpt", &lastckpt);
     if (ret != 0) {
-	warn(__func__, "write checkpt_stats: write_calc_prime_stats_ptr return: %d != 0", ret);
+	warn(__func__, "write lastckpt: write_calc_prime_stats_ptr return: %d != 0", ret);
 	return ret;
     }
 
     /*
-     * write total_stats stats
+     * write total stats
      */
-    ret = write_calc_prime_stats_ptr(stream, "total_stats", &total_stats);
+    ret = write_calc_prime_stats_ptr(stream, "total", &total);
     if (ret != 0) {
-	warn(__func__, "write total_stats: write_calc_prime_stats_ptr return: %d != 0", ret);
+	warn(__func__, "write total: write_calc_prime_stats_ptr return: %d != 0", ret);
 	return ret;
     }
 
