@@ -62,15 +62,22 @@
 #include <getopt.h>
 
 #include "lucas.h"
+#include "debug.h"
+#include "checkpt.h"
 
 /* constants */
 #define MAX_H_N_LEN BUFSIZ	/* more than enougn for h and n that we care about */
 
-/* globals */ char *program;	      /* our name */
+/* globals */
+const char * program = NULL;				/* our name */
+const char version_string[] = "demo/gmprime-2.0";	/* package name and version */
+int debuglevel = DBG_NONE;				/* if > 0 then be verbose */
 static const char *usage = "[-v] [-c x] h n\n"
     "\n"
     "\t-v\tverbose mode\n"
     "\t-c\toutput to stdout, calc code that may be used to verify partial results\n"
+    "\t\t    NOTE: -c implies -t\n"
+    "\t-t\toutput prime test times to stderr, (def: do not)\n"
     "\n"
     "\th\tpower of 2 multuplier (as in h*2^n-1) must be > 0 and < 2^n\n"
     "\tn\tpower of 2 (as in h*2^n-1) must be > 0\n";
@@ -124,19 +131,24 @@ main(int argc, char *argv[])
     const struct h_n *h_n_p;	/* pointer into small_h_n */
     int verbose = 0;		/* be verbose */
     int calc_mode = 0;		/* output calc code so calc can verify partial results */
+    int write_stats = 0;	/* output prime stats to stderr */
     extern int optind;		/* argv index of the next arg */
 
     /*
      * parse args
      */
     program = argv[0];
-    while ((c = getopt(argc, argv, "vc")) != -1) {
+    while ((c = getopt(argc, argv, "vct")) != -1) {
 	switch (c) {
 	case 'v':
 	    verbose = 1;
 	    break;
 	case 'c':
 	    calc_mode = 1;
+	    write_stats = 1;
+	    break;
+	case 't':
+	    write_stats = 1;
 	    break;
 	default:
 	    fprintf(stderr, "usage: %s %s", program, usage);
@@ -281,6 +293,13 @@ main(int argc, char *argv[])
     }
 
     /*
+     * initialize prime stats for start of test
+     */
+    if (write_stats) {
+	initialize_start_of_test_stats();
+    }
+
+    /*
      * initialize mp elements
      */
     mpz_init(pow_2);
@@ -337,9 +356,7 @@ main(int argc, char *argv[])
 	printf("read lucas;\n");
 	printf("print \"u_term = gen_u0(%s, %s, gen_v1(%s, %s));\";\n", h_str, n_str, h_str, n_str);
 	printf("u_term = gen_u0(%s, %s, gen_v1(%s, %s));\n", h_str, n_str, h_str, n_str);
-	printf("gmprime_u_term = ");
-	mpz_out_str(stdout, 10, u_term);
-	printf(";\n");
+	write_calc_mpz_hex(stdout, "gmprime_u_term", u_term);
 	printf("if (u_term == gmprime_u_term) {\n");
 	printf("  print \"u[2] value set correctly\";\n");
 	printf("} else {\n");
@@ -360,6 +377,7 @@ main(int argc, char *argv[])
 	/* setup for next loop */
 	if (calc_mode) {
 	    printf("print \"starting to compute u[%ld]\";\n", i);
+	    write_calc_int64_t(stdout, "i", i);
 	}
 
     	/* square */
@@ -371,9 +389,7 @@ main(int argc, char *argv[])
 	}
 	if (calc_mode) {
 	    printf("u_term_sq = u_term^2;\n");
-	    printf("gmprime_u_term_sq = ");
-	    mpz_out_str(stdout, 10, u_term_sq);
-	    printf(";\n");
+	    write_calc_mpz_hex(stdout, "gmprime_u_term_sq", u_term_sq);
 	    printf("if (u_term_sq == gmprime_u_term_sq) {\n");
 	    printf("  print \"gmprime_u_term_sq appears to be correct\";\n");
 	    printf("} else {\n");
@@ -393,9 +409,7 @@ main(int argc, char *argv[])
 	}
 	if (calc_mode) {
 	    printf("u_term_sq_2 = u_term_sq - 2;\n");
-	    printf("gmprime_u_term_sq_2 = ");
-	    mpz_out_str(stdout, 10, u_term_sq_2);
-	    printf(";\n");
+	    write_calc_mpz_hex(stdout, "gmprime_u_term_sq_2", u_term_sq_2);
 	    printf("if (u_term_sq_2 == gmprime_u_term_sq_2) {\n");
 	    printf("  print \"gmprime_u_term_sq_2 appears to be correct\";\n");
 	    printf("} else {\n");
@@ -514,9 +528,7 @@ main(int argc, char *argv[])
 	}
 	if (calc_mode) {
 	    printf("u_term = u_term_sq_2 %% riesel_cand;\n");
-	    printf("gmprime_u_term = ");
-	    mpz_out_str(stdout, 10, u_term);
-	    printf(";\n");
+	    write_calc_mpz_hex(stdout, "gmprime_u_term", u_term);
 	    printf("if (u_term == gmprime_u_term) {\n");
 	    printf("  print \"gmprime_u_term appears to be correct\";\n");
 	    printf("} else {\n");
@@ -551,6 +563,14 @@ main(int argc, char *argv[])
 	    printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	}
 	exit(1);
+    }
+
+    /*
+     * print final prime stats
+     */
+    if (write_stats) {
+	update_stats();
+	write_calc_prime_stats(stderr);
     }
 
     /*

@@ -36,8 +36,8 @@ CFLAGS= -std=c11 -Wall -pedantic -O3 -g3
 DESTDIR= /usr/local/bin
 INSTALL= install
 
-LUCAS= lucas.h lucas.c
-OBJECTS= lucas.o gmprime.o
+LUCAS= lucas.h lucas.c checkpt.c debug.c
+OBJECTS= lucas.o gmprime.o checkpt.o debug.o
 
 TEST_FILES= test/h-n.huge.txt test/h-n.large.txt test/h-n.med-composite.txt \
 	test/h-n.med.txt test/h-n.small-composite.txt test/h-n.small.txt \
@@ -49,6 +49,12 @@ all: ${TARGETS} ${TEST_FILES}
 
 lucas.o: ${LUCAS}
 	${CC} ${CFLAGS} lucas.c -c
+
+debug.o: ${LUCAS}
+	${CC} ${CFLAGS} debug.c -c
+
+checkpt.o: ${LUCAS}
+	${CC} ${CFLAGS} checkpt.c -c
 
 gmprime.o: gmprime.c ${LUCAS}
 	${CC} ${CFLAGS} gmprime.c -c
