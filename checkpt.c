@@ -46,10 +46,10 @@
  * prime test stats
  */
 static struct prime_stats beginrun;		/* program start (or program restore) initial prime stats value */
-static struct prime_stats teststart;		/* start of the primality test initial prime stats value */
 static struct prime_stats current;		/* prime stats as of now */
-static struct prime_stats lastckpt;		/* prime stats since program start or program restore */
-static struct prime_stats total;		/* prime stats since start of the primality test */
+/**/
+static struct prime_stats restored;		/* overall prime stats since restore (or start of not prior restore) */
+static struct prime_stats total;		/* updated total prime stats since start of the primality test */
 
 
 /*
@@ -139,41 +139,32 @@ initialize_beginrun_stats(void)
     /* initialize start of run prime stats */
     load_prime_stats(&beginrun);
 
-    /* clear checkpoint prime stats for this run */
-    zerosize_stats(&lastckpt);
-
-    /* initialize checkpoint prime stats for this run */
-    lastckpt.now = beginrun.now;
-    lastckpt.ru_maxrss = beginrun.ru_maxrss;
-
     /* beginrun has been initialized */
     return;
 }
 
 
 /*
- * initialize_teststart_stats - setup prime stats for the start a primality test
+ * initialize_total_stats - setup prime stats for the start a primality test
  *
- * NOTE: This function also calls beginrun() so that both
- * 	 beginrun and teststart are initized to the same value.
+ * NOTE: This function also calls initialize_beginrun_stats() so that both
+ * 	 beginrun and total are initized to the same value.
  */
 void
-initialize_teststart_stats(void)
+initialize_total_stats(void)
 {
     /* initialize prime stats for the start of this run */
     initialize_beginrun_stats();
 
-    /* clear teststart stats */
-    zerosize_stats(&teststart);
-    teststart.now = beginrun.now;
-    teststart.ru_maxrss = beginrun.ru_maxrss;
+    /* no prior restore so clear restored stats */
+    zerosize_stats(&restored);
+    restored.now = beginrun.now;
+    restored.ru_maxrss = beginrun.ru_maxrss;
 
-    /* clear total */
-    total = lastckpt;
-    total.now = beginrun.now;
-    total.ru_maxrss = beginrun.ru_maxrss;
+    /* total will be the same as cleared restore stats */
+    total = restored;
 
-    /* teststart and beginrun have been initialized */
+    /* beginrun and total have been initialized */
     return;
 }
 
@@ -195,7 +186,6 @@ update_stats(void)
     /*
      * update now
      */
-    lastckpt.now = current.now;
     total.now = current.now;
 
     /*
@@ -207,8 +197,7 @@ update_stats(void)
 	warn(__func__, "user CPU time went backwards, assuming 0 difference");
 	timerclear(&diff);
     }
-    lastckpt.ru_utime = diff;
-    timeradd(&teststart.ru_utime, &diff, &total.ru_utime);
+    timeradd(&restored.ru_utime, &diff, &total.ru_utime);
 
     /*
      * update system CPU time used
@@ -219,8 +208,7 @@ update_stats(void)
 	warn(__func__, "user system CPU time went backwards, assuming 0 difference");
 	timerclear(&diff);
     }
-    lastckpt.ru_stime = diff;
-    timeradd(&teststart.ru_stime, &diff, &total.ru_stime);
+    timeradd(&restored.ru_stime, &diff, &total.ru_stime);
 
     /*
      * update wall clock time used
@@ -231,54 +219,45 @@ update_stats(void)
 	warn(__func__, "user wall clock time went backwards, assuming 0 difference");
 	timerclear(&diff);
     }
-    lastckpt.wall_clock = diff;
-    timeradd(&teststart.wall_clock, &diff, &total.wall_clock);
+    current.wall_clock = diff;
+    timeradd(&restored.wall_clock, &diff, &total.wall_clock);
 
     /*
      * update maximum resident set size used in kilobytes
      */
-    if (current.ru_maxrss > beginrun.ru_maxrss) {
-	lastckpt.ru_maxrss = current.ru_maxrss;
-    }
-    if (current.ru_maxrss > teststart.ru_maxrss) {
+    if (current.ru_maxrss > total.ru_maxrss) {
 	total.ru_maxrss = current.ru_maxrss;
     }
 
     /*
      * update page reclaims (soft page faults)
      */
-    lastckpt.ru_minflt = current.ru_minflt - beginrun.ru_minflt;
-    total.ru_minflt = teststart.ru_minflt + lastckpt.ru_minflt;
+    total.ru_minflt = current.ru_minflt - beginrun.ru_minflt + restored.ru_minflt;
 
     /*
      * update page faults (hard page faults)
      */
-    lastckpt.ru_majflt = current.ru_majflt - beginrun.ru_majflt;
-    total.ru_majflt = teststart.ru_majflt + lastckpt.ru_majflt;
+    total.ru_majflt = current.ru_majflt - beginrun.ru_majflt + restored.ru_majflt;
 
     /*
      * update block input operations
      */
-    lastckpt.ru_inblock = current.ru_inblock - beginrun.ru_inblock;
-    total.ru_inblock = teststart.ru_inblock + lastckpt.ru_inblock;
+    total.ru_inblock = current.ru_inblock - beginrun.ru_inblock + restored.ru_inblock;
 
     /*
      * update block output operations
      */
-    lastckpt.ru_oublock = current.ru_oublock - beginrun.ru_oublock;
-    total.ru_oublock = teststart.ru_oublock + lastckpt.ru_oublock;
+    total.ru_oublock = current.ru_oublock - beginrun.ru_oublock + restored.ru_oublock;
 
     /*
      * update voluntary context switches
      */
-    lastckpt.ru_nvcsw = current.ru_nvcsw - beginrun.ru_nvcsw;
-    total.ru_nvcsw = teststart.ru_nvcsw + lastckpt.ru_nvcsw;
+    total.ru_nvcsw = current.ru_nvcsw - beginrun.ru_nvcsw + restored.ru_nvcsw;
 
     /*
      * update involuntary context switches
      */
-    lastckpt.ru_nivcsw = current.ru_nivcsw - beginrun.ru_nivcsw;
-    total.ru_nivcsw = teststart.ru_nivcsw + lastckpt.ru_nivcsw;
+    total.ru_nivcsw = current.ru_nivcsw - beginrun.ru_nivcsw + restored.ru_nivcsw;
 
     /* stats and been updated */
     return;
@@ -1188,15 +1167,6 @@ write_calc_prime_stats(FILE *stream)
     }
 
     /*
-     * write teststart stats
-     */
-    ret = write_calc_prime_stats_ptr(stream, "teststart", &teststart);
-    if (ret != 0) {
-	warn(__func__, "write teststart: write_calc_prime_stats_ptr return: %d != 0", ret);
-	return ret;
-    }
-
-    /*
      * write current stats
      */
     ret = write_calc_prime_stats_ptr(stream, "current", &current);
@@ -1206,11 +1176,11 @@ write_calc_prime_stats(FILE *stream)
     }
 
     /*
-     * write lastckpt stats
+     * write restored stats
      */
-    ret = write_calc_prime_stats_ptr(stream, "lastckpt", &lastckpt);
+    ret = write_calc_prime_stats_ptr(stream, "restored", &restored);
     if (ret != 0) {
-	warn(__func__, "write lastckpt: write_calc_prime_stats_ptr return: %d != 0", ret);
+	warn(__func__, "write restored: write_calc_prime_stats_ptr return: %d != 0", ret);
 	return ret;
     }
 

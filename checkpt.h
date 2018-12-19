@@ -67,7 +67,7 @@ struct prime_stats {
 
 /* extern functions */
 extern void initialize_beginrun_stats(void);
-extern void initialize_teststart_stats(void);
+extern void initialize_total_stats(void);
 extern void update_stats(void);
 extern int write_calc_mpz_hex(FILE *stream, char *name, const mpz_t value);
 extern int write_calc_int64_t(FILE *stream, char *name, const int64_t value);
