@@ -1,5 +1,5 @@
 /*
- * checkpt - checkpoint and restore stilities
+ * checkpoint - checkpoint and restore stilities
  *
  * Copyright (c) 2018 by Landon Curt Noll.  All Rights Reserved.
  *
@@ -47,13 +47,18 @@
 #include <gmp.h>
 
 #include "debug.h"
-#include "checkpt.h"
+#include "checkpoint.h"
 
 /*
  * checkpoint flags
  */
-static uint64_t checkpoint_alarm = 0;	/* != 0 ==> a SIGALRM or SIGVTALRM went off, checkpoint and continue */
-static uint64_t checkpoint_and_end = 0;	/* != 0 ==> a SIGINT went off, checkpoint and exit */
+uint64_t checkpoint_alarm = 0;		/* != 0 ==> a SIGALRM or SIGVTALRM went off, checkpoint and continue */
+uint64_t checkpoint_and_end = 0;	/* != 0 ==> a SIGINT went off, checkpoint and exit */
+
+/*
+ * checkpoint filenames
+ */
+char *filename = NULL;
 
 /*
  * prime test stats
@@ -70,10 +75,11 @@ static void record_sigalarm(int signum);
 static void record_sigint(int signum);
 static void zerosize_stats(struct prime_stats *ptr);
 static void load_prime_stats(struct prime_stats *ptr);
-static int careful_write(const char *calling_funcion_name, FILE * stream, char *fmt, ...);
-static int write_calc_timeval(FILE * stream, char *basename, char *subname, const struct timeval *value_ptr);
-static int write_calc_date_time_str(FILE * stream, char *basename, char *subname, const struct timeval *value_ptr);
-static int write_calc_prime_stats_ptr(FILE * stream, char *basename, struct prime_stats *ptr);
+static void careful_write(const char *calling_funcion_name, FILE *stream, char *fmt, ...);
+static void write_calc_timeval(FILE *stream, char *basename, char *subname, const struct timeval *value_ptr);
+static void write_calc_date_time_str(FILE *stream, char *basename, char *subname, const struct timeval *value_ptr);
+static void write_calc_prime_stats_ptr(FILE *stream, char *basename, struct prime_stats *ptr);
+static void setup_checkpoint(char *checkpoint_dir, int checkpoint_secs);
 static int mkdirp(char *path_arg, int mode, int duplicate);
 
 
@@ -88,6 +94,8 @@ static int mkdirp(char *path_arg, int mode, int duplicate);
  *
  * Another function at a time may consult the checkpoint_alarm
  * value and perform the checkpoint as needed.
+ *
+ * This function does not return on error.
  */
 static void
 record_sigalarm(int signum)
@@ -97,19 +105,24 @@ record_sigalarm(int signum)
      */
     if (signum != SIGALRM && signum != SIGVTALRM) {
 	fflush(stdout);
-	warn(__func__, "non-SIGALRM and non-SIGVTALRM detected: %d", signum);
 	fflush(stderr);
+	err(99, __func__, "non-SIGALRM and non-SIGVTALRM detected: %d", signum);
+	return;	// NOT REACHED
     }
 
     /*
      * checkpoint at next opportunity
      */
     if (checkpoint_alarm) {
-	warn(__func__, "previous checkpoint_alarm value not cleared: %d", checkpoint_and_end);
+	fflush(stdout);
+	fflush(stderr);
+	dbg(DBG_LOW, "previous checkpoint_alarm value not cleared: %d", checkpoint_and_end);
     }
     ++checkpoint_alarm;
     if (checkpoint_alarm <= 0) {
-	warn(__func__, "checkpoint_alarm counter wraparound, reset to 1");
+	fflush(stdout);
+	fflush(stderr);
+	dbg(DBG_LOW, "checkpoint_alarm counter wraparound, reset to 1");
 	checkpoint_alarm = 1;
     }
     return;
@@ -129,6 +142,8 @@ record_sigalarm(int signum)
  * value and perform the checkpoint as needed and then exit.
  * This function does not exit. It is the responbility of
  * the appropriate checkpoint function to exit.
+ *
+ * This function does not return on error.
  */
 static void
 record_sigint(int signum)
@@ -138,19 +153,24 @@ record_sigint(int signum)
      */
     if (signum != SIGINT) {
 	fflush(stdout);
-	warn(__func__, "non-SIGINT detected: %d", signum);
 	fflush(stderr);
+	err(99, __func__, "non-SIGINT detected: %d", signum);
+	return;	// NOT REACHED
     }
 
     /*
      * checkpoint at next opportunity and then exit
      */
     if (checkpoint_and_end) {
-	warn(__func__, "previous checkpoint_and_end value not cleared: %d", checkpoint_and_end);
+	fflush(stdout);
+	fflush(stderr);
+	dbg(DBG_LOW, "previous checkpoint_and_end value not cleared: %d", checkpoint_and_end);
     }
     ++checkpoint_and_end;
     if (checkpoint_and_end <= 0) {
-	warn(__func__, "checkpoint_and_end counter wraparound, reset to 1");
+	fflush(stdout);
+	fflush(stderr);
+	dbg(DBG_LOW, "checkpoint_and_end counter wraparound, reset to 1");
 	checkpoint_and_end = 1;
     }
     return;
@@ -163,7 +183,7 @@ record_sigint(int signum)
  * given:
  *      ptr - pointer to a struct prime_stats or NULL
  *
- * NOTE: This function only warns if ptr is NULL and just returns.
+ * This function does not return on error.
  */
 static void
 zerosize_stats(struct prime_stats *ptr)
@@ -172,8 +192,8 @@ zerosize_stats(struct prime_stats *ptr)
      * paranoia
      */
     if (ptr == NULL) {
-	warn(__func__, "ptr is NULL");
-	return;
+	err(99, __func__, "ptr is NULL");
+	return;	// NOT REACHED
     }
 
     /*
@@ -194,7 +214,7 @@ zerosize_stats(struct prime_stats *ptr)
  * given:
  *      ptr - pointer to a struct prime_stats or NULL
  *
- * NOTE: This function only warns if ptr is NULL and just returns.
+ * This function does not return on error.
  */
 static void
 load_prime_stats(struct prime_stats *ptr)
@@ -205,8 +225,8 @@ load_prime_stats(struct prime_stats *ptr)
      * paranoia
      */
     if (ptr == NULL) {
-	warn(__func__, "ptr is NULL");
-	return;
+	err(99, __func__, "ptr is NULL");
+	return;	// NOT REACHED
     }
 
     /*
@@ -218,7 +238,8 @@ load_prime_stats(struct prime_stats *ptr)
      * record the time
      */
     if (gettimeofday(&ptr->now, NULL) < 0) {
-	warnp(__func__, "gettimeofday error");
+	errp(99, __func__, "gettimeofday error");
+	return;	// NOT REACHED
     }
 
     /*
@@ -228,7 +249,8 @@ load_prime_stats(struct prime_stats *ptr)
     timerclear(&usage.ru_utime);
     timerclear(&usage.ru_stime);
     if (getrusage(RUSAGE_SELF, &usage) < 0) {
-	warnp(__func__, "getrusage error");
+	errp(99, __func__, "getrusage error");
+	return;	// NOT REACHED
     }
 
     /*
@@ -263,12 +285,10 @@ load_prime_stats(struct prime_stats *ptr)
  *      stream - open checkpoint file stream to append to
  *      fmt - vfprintf format
  *
- * returns:
- *      0 - no errors detected
- *      != 0 - return with this error code
+ * This function does not return on error.
  */
-static int
-careful_write(const char *calling_funcion_name, FILE * stream, char *fmt, ...)
+static void
+careful_write(const char *calling_funcion_name, FILE *stream, char *fmt, ...)
 {
     va_list ap;			/* argument pointer */
     int ret;			/* vfprintf() return value */
@@ -283,23 +303,23 @@ careful_write(const char *calling_funcion_name, FILE * stream, char *fmt, ...)
      */
     if (calling_funcion_name == NULL) {
 	va_end(ap);		// clean up stdarg stuff
-	warn(__func__, "calling_funcion_name is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "calling_funcion_name is NULL");
+	return;	// NOT REACHED
     }
     if (stream == NULL) {
 	va_end(ap);		// clean up stdarg stuff
-	warn(calling_funcion_name, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (fmt == NULL) {
 	va_end(ap);		// clean up stdarg stuff
-	warn(calling_funcion_name, "fmt is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "fmt is NULL");
+	return;	// NOT REACHED
     }
     if (fileno(stream) < 0) {
 	va_end(ap);		// clean up stdarg stuff
-	warn(calling_funcion_name, "stream is not valid");
-	return CHECKPT_INVALID_STREAM;
+	err(99, __func__, "stream is not valid");
+	return;	// NOT REACHED
     }
 
     /*
@@ -319,30 +339,35 @@ careful_write(const char *calling_funcion_name, FILE * stream, char *fmt, ...)
     if (ret <= 0 || errno != 0 || ferror(stream) || feof(stream)) {
 	if (errno == 0) {
 	    if (feof(stream)) {
-		warn(__func__, "EOF in careful_write called by %s, errno: 0, ret: %d", calling_funcion_name, ret);
+		err(99, __func__,
+			"EOF in careful_write called by %s, errno: 0, ret: %d", calling_funcion_name, ret);
 	    } else if (ferror(stream)) {
-		warn(__func__, "ferror in careful_write called by %s, errno: 0, ret: %d", calling_funcion_name, ret);
+		err(99, __func__,
+			"ferror in careful_write called by %s, errno: 0, ret: %d", calling_funcion_name, ret);
 	    } else {
-		warn(__func__, "error in careful_write called by %s, errno: 0, ret: %d", calling_funcion_name, ret);
+		err(99, __func__,
+			"error in careful_write called by %s, errno: 0, ret: %d", calling_funcion_name, ret);
 	    }
-	    return CHECKPT_WRITE_ERRNO_ZERO_ERR;
 	} else if (feof(stream)) {
-	    warnp(__func__, "EOF in careful_write called by %s, errno: %d, ret: %d", calling_funcion_name, errno, ret);
-	    return errno;
+	    errp(99, __func__,
+		     "EOF in careful_write called by %s, errno: %d, ret: %d", calling_funcion_name, errno, ret);
 	} else if (ferror(stream)) {
-	    warnp(__func__, "ferror in careful_write called by %s, errno: %d, ret: %d", calling_funcion_name, errno, ret);
-	    return errno;
+	    errp(99, __func__,
+		     "ferror in careful_write called by %s, errno: %d, ret: %d", calling_funcion_name, errno, ret);
 	} else {
-	    warnp(__func__, "error in careful_write called by %s, errno: %d, ret: %d", calling_funcion_name, errno, ret);
-	    return errno;
+	    errp(99, __func__,
+		     "error in careful_write called by %s, errno: %d, ret: %d", calling_funcion_name, errno, ret);
 	}
+	return;	// NOT REACHED
     }
-    dbg(DBG_VVHIGH, "careful_write called by %s, vfprintf returned: %d", calling_funcion_name, ret);
+    if (debuglevel >= DBG_VVHIGH) {
+	dbg(DBG_VVHIGH, "careful_write called by %s, vfprintf returned: %d", calling_funcion_name, ret);
+    }
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
@@ -356,43 +381,36 @@ careful_write(const char *calling_funcion_name, FILE * stream, char *fmt, ...)
  *      value - const mpz_t value to write in hex
  *              NOTE: const __mpz_struct * is the same as const mpz_t
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-int
-write_calc_mpz_hex(FILE * stream, char *basename, char *subname, const mpz_t value)
+void
+write_calc_mpz_hex(FILE *stream, char *basename, char *subname, const mpz_t value)
 {
-    int ret;			/* careful_write return value */
+    int ret;	/* mpz_out_str return */
 
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (subname == NULL) {
-	warn(__func__, "subname is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "subname is NULL");
+	return;	// NOT REACHED
     }
     if (value == NULL) {
-	warn(__func__, "value is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "value is NULL");
+	return;	// NOT REACHED
     }
 
     /*
      * write hex variable prefix
      */
     if (basename == NULL) {
-	ret = careful_write(__func__, stream, "%s = 0x", subname);
+	careful_write(__func__, stream, "%s = 0x", subname);
     } else {
-	ret = careful_write(__func__, stream, "%s_%s = 0x", basename, subname);
-    }
-    if (ret != 0) {
-	warn(__func__, "write hex variable prefix: careful_write return: %d != 0", ret);
-	return ret;
+	careful_write(__func__, stream, "%s_%s = 0x", basename, subname);
     }
 
     /*
@@ -407,45 +425,38 @@ write_calc_mpz_hex(FILE * stream, char *basename, char *subname, const mpz_t val
     if (ret <= 0 || errno != 0 || ferror(stream) || feof(stream)) {
 	if (errno == 0) {
 	    if (feof(stream)) {
-		warn(__func__, "EOF during mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
+		err(99, __func__, "EOF during mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
 	    } else if (ferror(stream)) {
-		warn(__func__, "ferror during mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
+		err(99, __func__, "ferror during mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
 	    } else if (ret == 0) {
-		warn(__func__, "zero return error in mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
+		err(99, __func__, "zero return error in mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
 	    } else {
-		warn(__func__, "error during mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
+		err(99, __func__, "error during mpz_out_str called from %s, errno: 0, ret: %d", __func__, ret);
 	    }
-	    return CHECKPT_MPZ_OUT_STR_ERR;
 	} else if (feof(stream)) {
-	    warnp(__func__, "EOF during mpz_out_str called from %s, errno: %d, ret: %d", __func__, errno, ret);
-	    return errno;
+	    errp(99, __func__, "EOF during mpz_out_str called from %s, errno: %d, ret: %d", __func__, errno, ret);
 	} else if (ferror(stream)) {
-	    warnp(__func__, "ferror during mpz_out_str called from %s, errno: %d, ret: %d", __func__, errno, ret);
-	    return errno;
+	    errp(99, __func__, "ferror during mpz_out_str called from %s, errno: %d, ret: %d", __func__, errno, ret);
 	} else {
-	    warnp(__func__, "ferror during mpz_out_str called from %s, errno: %d, ret: %d", __func__, errno, ret);
-	    return errno;
+	    errp(99, __func__, "ferror during mpz_out_str called from %s, errno: %d, ret: %d", __func__, errno, ret);
 	}
+	return;	// NOT REACHED
     }
 
     /*
      * write hex variable suffix
      */
-    ret = careful_write(__func__, stream, " ;\n");
-    if (ret != 0) {
-	warn(__func__, "write hex variable suffix: careful_write return: %d != 0", ret);
-	return ret;
-    }
+    careful_write(__func__, stream, " ;\n");
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
 /*
- * write_calc_int64_t - write int64_t value to an open stream in calc format with a 2 part name
+ * write_calc_int64_t - write int64_t value to an open stream in calc format
  *
  * given:
  *      stream - open checkpoint file stream to append to
@@ -453,45 +464,36 @@ write_calc_mpz_hex(FILE * stream, char *basename, char *subname, const mpz_t val
  *      subname - subcomponent variable name
  *      value - int64_t value to write
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-int
-write_calc_int64_t(FILE * stream, char *basename, char *subname, const int64_t value)
+void
+write_calc_int64_t(FILE *stream, char *basename, char *subname, const int64_t value)
 {
-    int ret;			/* careful_write return value */
-
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (subname == NULL) {
-	warn(__func__, "subname is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "subname is NULL");
+	return;	// NOT REACHED
     }
 
     /*
      * write the calc expression
      */
     if (basename == NULL) {
-	ret = careful_write(__func__, stream, "%s = %" PRId64 " ;\n", subname, value);
+	careful_write(__func__, stream, "%s = %" PRId64 " ;\n", subname, value);
     } else {
-	ret = careful_write(__func__, stream, "%s_%s = %" PRId64 " ;\n", basename, subname, value);
-    }
-    if (ret != 0) {
-	warn(__func__, "write int64_t: careful_write return: %d != 0", ret);
-	return ret;
+	careful_write(__func__, stream, "%s_%s = %" PRId64 " ;\n", basename, subname, value);
     }
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
@@ -504,45 +506,36 @@ write_calc_int64_t(FILE * stream, char *basename, char *subname, const int64_t v
  *      subname - subcomponent variable name
  *      value - uint64_t value to write
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-int
-write_calc_uint64_t(FILE * stream, char *basename, char *subname, const uint64_t value)
+void
+write_calc_uint64_t(FILE *stream, char *basename, char *subname, const uint64_t value)
 {
-    int ret;			/* careful_write return value */
-
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (subname == NULL) {
-	warn(__func__, "subname is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "subname is NULL");
+	return;	// NOT REACHED
     }
 
     /*
      * write the calc expression
      */
     if (basename == NULL) {
-	ret = careful_write(__func__, stream, "%s_%s = %" PRIu64 " ;\n", basename, subname, value);
+	careful_write(__func__, stream, "%s_%s = %" PRIu64 " ;\n", basename, subname, value);
     } else {
-	ret = careful_write(__func__, stream, "%s = %" PRIu64 " ;\n", subname, value);
-    }
-    if (ret != 0) {
-	warn(__func__, "write uint64_t: careful_write return: %d != 0", ret);
-	return ret;
+	careful_write(__func__, stream, "%s = %" PRIu64 " ;\n", subname, value);
     }
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
@@ -555,54 +548,45 @@ write_calc_uint64_t(FILE * stream, char *basename, char *subname, const uint64_t
  *      subname - subcomponent variable name
  *      value - string to write
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-int
-write_calc_str(FILE * stream, char *basename, char *subname, const char *value)
+void
+write_calc_str(FILE *stream, char *basename, char *subname, const char *value)
 {
-    int ret;			/* careful_write return value */
-
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (subname == NULL) {
-	warn(__func__, "subname is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "subname is NULL");
+	return;	// NOT REACHED
     }
     if (value == NULL) {
-	warn(__func__, "value is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "value is NULL");
+	return;	// NOT REACHED
     }
 
     /*
      * write the calc expression
      */
     if (basename == NULL) {
-	ret = careful_write(__func__, stream, "%s = \"%s\" ;\n", subname, value);
+	careful_write(__func__, stream, "%s = \"%s\" ;\n", subname, value);
     } else {
-	ret = careful_write(__func__, stream, "%s_%s = \"%s\" ;\n", basename, subname, value);
-    }
-    if (ret != 0) {
-	warn(__func__, "write string: careful_write return: %d != 0", ret);
-	return ret;
+	careful_write(__func__, stream, "%s_%s = \"%s\" ;\n", basename, subname, value);
     }
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
 /*
- * write_calc_timeval - write a time value in seconds.microseconds to an open stream in calc format with a 2 part name
+ * write_calc_timeval - write a time value in seconds.microseconds to an open stream in calc format
  *
  * given:
  *      stream - open checkpoint file stream to append to
@@ -610,55 +594,46 @@ write_calc_str(FILE * stream, char *basename, char *subname, const char *value)
  *      subname - subcomponent variable name
  *      value_ptr - pointer to a struct timeval
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-static int
-write_calc_timeval(FILE * stream, char *basename, char *subname, const struct timeval *value_ptr)
+static void
+write_calc_timeval(FILE *stream, char *basename, char *subname, const struct timeval *value_ptr)
 {
-    int ret;			/* careful_write return value */
-
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (subname == NULL) {
-	warn(__func__, "subname is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "subname is NULL");
+	return;	// NOT REACHED
     }
     if (value_ptr == NULL) {
-	warn(__func__, "value_ptr is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "value_ptr is NULL");
+	return;	// NOT REACHED
     }
 
     /*
      * write the calc expression
      */
     if (basename == NULL) {
-	ret = careful_write(__func__, stream, "%s = %" PRIu64 ".%06d ;\n", subname, value_ptr->tv_sec, value_ptr->tv_usec);
+	careful_write(__func__, stream, "%s = %" PRIu64 ".%06d ;\n", subname, value_ptr->tv_sec, value_ptr->tv_usec);
     } else {
-	ret = careful_write(__func__, stream, "%s_%s = %" PRIu64 ".%06d ;\n",
-			    basename, subname, value_ptr->tv_sec, value_ptr->tv_usec);
-    }
-    if (ret != 0) {
-	warn(__func__, "write timeval: careful_write return: %d != 0", ret);
-	return ret;
+	careful_write(__func__, stream, "%s_%s = %" PRIu64 ".%06d ;\n",
+			        basename, subname, value_ptr->tv_sec, value_ptr->tv_usec);
     }
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
 /*
- * write_calc_date_time_str - write a time value in date time string to an open stream in calc format with a 2 part name
+ * write_calc_date_time_str - write a time value in date time string to an open stream in calc format
  *
  * given:
  *      stream - open checkpoint file stream to append to
@@ -666,32 +641,29 @@ write_calc_timeval(FILE * stream, char *basename, char *subname, const struct ti
  *      subname - subcomponent variable name
  *      value_ptr - pointer to a struct timeval
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-static int
-write_calc_date_time_str(FILE * stream, char *basename, char *subname, const struct timeval *value_ptr)
+static void
+write_calc_date_time_str(FILE *stream, char *basename, char *subname, const struct timeval *value_ptr)
 {
-    int ret;			/* careful_write return value */
     struct tm *tm_time;		/* broken-down time */
     char buf[BUFSIZ + 1];	/* time string buffer */
+    int ret;			/* gmtime() and strftime() return */
 
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (subname == NULL) {
-	warn(__func__, "subname is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "subname is NULL");
+	return;	// NOT REACHED
     }
     if (value_ptr == NULL) {
-	warn(__func__, "value_ptr is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "value_ptr is NULL");
+	return;	// NOT REACHED
     }
 
     /*
@@ -700,12 +672,11 @@ write_calc_date_time_str(FILE * stream, char *basename, char *subname, const str
     tm_time = gmtime(&value_ptr->tv_sec);
     if (tm_time == NULL) {
 	if (errno == 0) {
-	    warn(__func__, "gmtime returned NULL, errno: 0");
-	    return CHECKPT_GMTIIME_ERR;
+	    err(99, __func__, "gmtime returned NULL, errno: 0");
 	} else {
-	    warnp(__func__, "gmtime returned NULL, errno: %d", errno);
-	    return errno;
+	    errp(99, __func__, "gmtime returned NULL, errno: %d", errno);
 	}
+	return;	// NOT REACHED
     }
 
     /*
@@ -714,203 +685,140 @@ write_calc_date_time_str(FILE * stream, char *basename, char *subname, const str
     ret = strftime(buf, BUFSIZ, "%F %T UTC", tm_time);
     if (ret <= 0) {
 	if (errno == 0) {
-	    warnp(__func__, "strftime returned %d, errno = 0", ret);
-	    return CHECKPT_STRFTIME_ERR;
+	    errp(99, __func__, "strftime returned %d, errno = 0", ret);
 	} else {
-	    warnp(__func__, "strftime returned %d, errno = %d", ret, errno);
-	    return errno;
+	    errp(99, __func__, "strftime returned %d, errno = %d", ret, errno);
 	}
+	return;	// NOT REACHED
     }
     buf[BUFSIZ] = '\0';		// paranoia
 
     /*
      * write date and time as a calc string
      */
-    ret = write_calc_str(stream, basename, subname, buf);
-    if (ret != 0) {
-	warn(__func__, "write write_calc_str careful_write return: %d != 0", ret);
-	return ret;
-    }
+    write_calc_str(stream, basename, subname, buf);
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
 /*
- * write_calc_prime_stats_ptr - write prime stats to an open stream in calc format using a basename
+ * write_calc_prime_stats_ptr - write prime stats to an open stream in calc format
  *
  * given:
  *      stream - open checkpoint file stream to append to
  *      basename - base variable name
  *      value_ptr - pointer to a struct prime_stats
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-static int
-write_calc_prime_stats_ptr(FILE * stream, char *basename, struct prime_stats *ptr)
+static void
+write_calc_prime_stats_ptr(FILE *stream, char *basename, struct prime_stats *ptr)
 {
-    int ret;			/* careful_write return value */
-
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
     if (basename == NULL) {
-	warn(__func__, "basename is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "basename is NULL");
+	return;	// NOT REACHED
     }
     if (ptr == NULL) {
-	warn(__func__, "ptr is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "ptr is NULL");
+	return;	// NOT REACHED
     }
 
     /*
      * write start time as a timestamp since the epoch
      */
-    ret = write_calc_timeval(stream, basename, "timestamp", &ptr->now);
-    if (ret != 0) {
-	warn(__func__, "write %s_timestamp: write_calc_timeval return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_timeval(stream, basename, "timestamp", &ptr->now);
 
     /*
      * write start time as a timestamp since as a string
      */
-    ret = write_calc_date_time_str(stream, basename, "date_time", &ptr->now);
-    if (ret != 0) {
-	warn(__func__, "write %s_date_time write_calc_date_time_str return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_date_time_str(stream, basename, "date_time", &ptr->now);
 
     /*
      * write user CPU time used
      */
-    ret = write_calc_timeval(stream, basename, "ru_utime", &ptr->ru_utime);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_utime: write_calc_timeval return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_timeval(stream, basename, "ru_utime", &ptr->ru_utime);
 
     /*
      * write system CPU time used
      */
-    ret = write_calc_timeval(stream, basename, "ru_stime", &ptr->ru_stime);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_stime: write_calc_timeval return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_timeval(stream, basename, "ru_stime", &ptr->ru_stime);
 
     /*
      * write wall clock time used
      */
-    ret = write_calc_timeval(stream, basename, "wall_clock", &ptr->wall_clock);
-    if (ret != 0) {
-	warn(__func__, "write %s_wall_clock: write_calc_timeval return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_timeval(stream, basename, "wall_clock", &ptr->wall_clock);
 
     /*
      * write maximum resident set size used in kilobytes
      */
-    ret = write_calc_int64_t(stream, basename, "ru_maxrss", ptr->ru_maxrss);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_maxrss: write_calc_int64_t return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_int64_t(stream, basename, "ru_maxrss", ptr->ru_maxrss);
 
     /*
      * write page reclaims (soft page faults)
      */
-    ret = write_calc_int64_t(stream, basename, "ru_minflt", ptr->ru_minflt);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_minflt: write_calc_int64_t return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_int64_t(stream, basename, "ru_minflt", ptr->ru_minflt);
 
     /*
      * write page faults (hard page faults)
      */
-    ret = write_calc_int64_t(stream, basename, "ru_majflt", ptr->ru_majflt);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_majflt: write_calc_int64_t return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_int64_t(stream, basename, "ru_majflt", ptr->ru_majflt);
 
     /*
      * write block input operations
      */
-    ret = write_calc_int64_t(stream, basename, "ru_inblock", ptr->ru_inblock);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_inblock: write_calc_int64_t return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_int64_t(stream, basename, "ru_inblock", ptr->ru_inblock);
 
     /*
      * write block output operations
      */
-    ret = write_calc_int64_t(stream, basename, "ru_oublock", ptr->ru_oublock);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_oublock: write_calc_int64_t return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_int64_t(stream, basename, "ru_oublock", ptr->ru_oublock);
 
     /*
      * write voluntary context switches
      */
-    ret = write_calc_int64_t(stream, basename, "ru_nvcsw", ptr->ru_nvcsw);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_nvcsw: write_calc_int64_t return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_int64_t(stream, basename, "ru_nvcsw", ptr->ru_nvcsw);
 
     /*
      * write involuntary context switches
      */
-    ret = write_calc_int64_t(stream, basename, "ru_nivcsw", ptr->ru_nivcsw);
-    if (ret != 0) {
-	warn(__func__, "write %s_ru_nivcsw: write_calc_int64_t return: %d != 0", basename, ret);
-	return ret;
-    }
+    write_calc_int64_t(stream, basename, "ru_nivcsw", ptr->ru_nivcsw);
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
 /*
- * write_calc_prime_stats - write prime stats to an open stream in calc format using a basename
+ * write_calc_prime_stats - write prime stats to an open stream in calc format
  *
  * given:
  *      stream - open checkpoint file stream to append to
  *      extended - 0 ==> write only total stats, != 0 ==> write all stats
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-int
-write_calc_prime_stats(FILE * stream, int extended)
+void
+write_calc_prime_stats(FILE *stream, int extended)
 {
-    int ret;			/* careful_write return value */
-
     /*
      * firewall
      */
     if (stream == NULL) {
-	warn(__func__, "stream is NULL");
-	return CHECKPT_NULL_PTR;
+	err(99, __func__, "stream is NULL");
+	return;	// NOT REACHED
     }
 
     /*
@@ -921,44 +829,28 @@ write_calc_prime_stats(FILE * stream, int extended)
 	/*
 	 * write beginrun stats
 	 */
-	ret = write_calc_prime_stats_ptr(stream, "beginrun", &beginrun);
-	if (ret != 0) {
-	    warn(__func__, "write beginrun: write_calc_prime_stats_ptr return: %d != 0", ret);
-	    return ret;
-	}
+	write_calc_prime_stats_ptr(stream, "beginrun", &beginrun);
 
 	/*
 	 * write current stats
 	 */
-	ret = write_calc_prime_stats_ptr(stream, "current", &current);
-	if (ret != 0) {
-	    warn(__func__, "write current: write_calc_prime_stats_ptr return: %d != 0", ret);
-	    return ret;
-	}
+	write_calc_prime_stats_ptr(stream, "current", &current);
 
 	/*
 	 * write restored stats
 	 */
-	ret = write_calc_prime_stats_ptr(stream, "restored", &restored);
-	if (ret != 0) {
-	    warn(__func__, "write restored: write_calc_prime_stats_ptr return: %d != 0", ret);
-	    return ret;
-	}
+	write_calc_prime_stats_ptr(stream, "restored", &restored);
     }
 
     /*
      * write total stats
      */
-    ret = write_calc_prime_stats_ptr(stream, "total", &total);
-    if (ret != 0) {
-	warn(__func__, "write total: write_calc_prime_stats_ptr return: %d != 0", ret);
-	return ret;
-    }
+    write_calc_prime_stats_ptr(stream, "total", &total);
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
@@ -983,17 +875,12 @@ initialize_beginrun_stats(void)
 /*
  * initialize_total_stats - setup prime stats for the start a primality test
  *
- * NOTE: This function also calls initialize_beginrun_stats() so that both
- *       beginrun and total are initized to the same value.
+ * NOTE: This function assumes that initialize_beginrun_stats() was already
+ *	 called and that beginrun contains info from the start of this program.
  */
 void
 initialize_total_stats(void)
 {
-    /*
-     * initialize prime stats for the start of this run
-     */
-    initialize_beginrun_stats();
-
     /*
      * no prior restore so clear restored stats
      */
@@ -1113,6 +1000,36 @@ update_stats(void)
 
 
 /*
+ * initialize_checkpoint - setup checkpoint system
+ *
+ * given:
+ *      checkpoint_dir        directory under which checkpoint files will be created
+ *                          	NULL ==> do not checkpoint
+ *      checkpoint_secs       checkpoint every checkpoint_secs seconds, 0 ==> every term,
+ *                          	<0 ==> do not checkpoint periodically (only on demand)
+ *
+ * This function does not return on error.
+ */
+void
+initialize_checkpoint(char *checkpoint_dir, int checkpoint_secs)
+{
+    /*
+     * if we have a non-NULL checkpoint_dir, setup the checkpoint system
+     */
+    if (checkpoint_dir != NULL) {
+	setup_checkpoint(checkpoint_dir, checkpoint_secs);
+    }
+
+    /* XXX - more code here */
+
+    /*
+     * checkpoint system has been initialized
+     */
+    return;
+}
+
+
+/*
  * mkdirp - create path
  *
  * given:
@@ -1138,8 +1055,8 @@ mkdirp(char *path_arg, int mode, int duplicate)
      * firewall
      */
     if (path_arg == NULL) {
-	warn(__func__, "path_arg is NULL");
-	return -1;
+	err(99, __func__, "path_arg is NULL");
+	return -1; // NOT REACHED
     }
 
     /*
@@ -1162,12 +1079,11 @@ mkdirp(char *path_arg, int mode, int duplicate)
 	path = strdup(path_arg);
 	if (path == NULL) {
 	    if (errno == 0) {
-		warn(__func__, "failed to mkdir path_arg, errno: 0");
-		return CHECKPT_MKDIR_ERRNO_ZERO_ERR;
+		err(99, __func__, "failed to mkdir path_arg, errno: 0");
 	    } else {
-		warnp(__func__, "failed to mkdir path_arg, errno: %d", errno);
-		return errno;
+		errp(99, __func__, "failed to mkdir path_arg, errno: %d", errno);
 	    }
+	    return -1; // NOT REACHED
 	}
     } else {
 	path = path_arg;
@@ -1197,12 +1113,11 @@ mkdirp(char *path_arg, int mode, int duplicate)
     if (ret < 0) {
 	if (errno != EEXIST) {
 	    if (errno == 0) {
-		warn(__func__, "mkdir %s, errno: %d", path, errno);
-		return CHECKPT_MKDIR_ERRNO_ZERO_ERR;
+		err(99, __func__, "mkdir %s, errno: %d", path, errno);
 	    } else {
-		warnp(__func__, "mkdir %s, errno: %d", path, errno);
-		return errno;
+		errp(99, __func__, "mkdir %s, errno: %d", path, errno);
 	    }
+	    return -1; // NOT REACHED
 	}
     }
 
@@ -1221,21 +1136,18 @@ mkdirp(char *path_arg, int mode, int duplicate)
 
 
 /*
- * setup_checkpt - setup the checkpoint process
+ * setup_checkpoint - setup the checkpoint system
  *
  * given:
- *      chkptdir        directory under which checkpoint files will be created,
- *                          NULL ==> do not checkpoint
- *      chkptsecs       checkpoint every chkptsecs seconds, 0 ==> every term,
- *                          <0 ==> do not checkpoint peridocally (only on demand)
+ *      checkpoint_dir        directory under which checkpoint files will be created,
+ *                          	NULL ==> do not checkpoint
+ *      checkpoint_secs       checkpoint every checkpoint_secs seconds, 0 ==> every term,
+ *                          	<0 ==> do not checkpoint periodically (only on demand)
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-int
-setup_checkpt(char *chkptdir, int chkptsecs)
+static void
+setup_checkpoint(char *checkpoint_dir, int checkpoint_secs)
 {
     struct sigaction psa;	/* sigaction info for signal handler setup */
     struct itimerval timer;	/* checkpoint internal */
@@ -1244,9 +1156,9 @@ setup_checkpt(char *chkptdir, int chkptsecs)
     /*
      * firewall
      */
-    if (chkptdir == NULL) {
-	warn(__func__, "chkptdir is NULL");
-	return CHECKPT_INVALID_CHECKPT_ARG;
+    if (checkpoint_dir == NULL) {
+	err(99, __func__, "checkpoint_dir is NULL");
+	return;	// NOT REACHED
     }
 
     /*
@@ -1255,67 +1167,60 @@ setup_checkpt(char *chkptdir, int chkptsecs)
      * NOTE: This will verfiy that the checkpoint directory exits, or if it does
      *       not initially exist, attempt to create the checkpoint directory.
      */
-    ret = mkdirp(chkptdir, DEF_DIR_MODE, 1);
+    ret = mkdirp(checkpoint_dir, DEF_DIR_MODE, 1);
     if (ret != 0) {
-	warn(__func__, "invalid checkpoint directory: %s", chkptdir);
-	return ret;
+	err(99, __func__, "invalid checkpoint directory: %s", checkpoint_dir);
+	return;	// NOT REACHED
     }
     errno = 0;
-    ret = access(chkptdir, W_OK);
+    ret = access(checkpoint_dir, W_OK);
     if (ret != 0) {
 	if (errno == 0) {
-	    warnp(__func__, "cannot write checkpoint directory: %s, errno: 0", chkptdir);
-	    return CHECKPT_ACCESS_ERRNO_ZERO_ERR;
+	    errp(99, __func__, "cannot write checkpoint directory: %s, errno: 0", checkpoint_dir);
 	} else if (errno == EACCES) {
-	    warn(__func__, "checkpoint directory not writable: %s", chkptdir);
-	    return errno;
+	    err(99, __func__, "checkpoint directory not writable: %s", checkpoint_dir);
 	} else {
-	    warn(__func__, "error while checking for a writable checkpoint directory: %s, errno: %d", chkptdir, errno);
-	    return errno;
+	    err(99, __func__, "error while checking for a writable checkpoint directory: %s, errno: %d", checkpoint_dir, errno);
 	}
+	return;	// NOT REACHED
     }
     errno = 0;
-    ret = access(chkptdir, R_OK);
+    ret = access(checkpoint_dir, R_OK);
     if (ret != 0) {
 	if (errno == 0) {
-	    warnp(__func__, "cannot read checkpoint directory: %s, errno: 0", chkptdir);
-	    return CHECKPT_ACCESS_ERRNO_ZERO_ERR;
+	    errp(99, __func__, "cannot read checkpoint directory: %s, errno: 0", checkpoint_dir);
 	} else if (errno == EACCES) {
-	    warn(__func__, "checkpoint directory not readable: %s", chkptdir);
-	    return errno;
+	    err(99, __func__, "checkpoint directory not readable: %s", checkpoint_dir);
 	} else {
-	    warn(__func__, "error while checking for a readable checkpoint directory: %s, errno: %d", chkptdir, errno);
-	    return errno;
+	    err(99, __func__, "error while checking for a readable checkpoint directory: %s, errno: %d", checkpoint_dir, errno);
 	}
+	return;	// NOT REACHED
     }
     errno = 0;
-    ret = access(chkptdir, X_OK);
+    ret = access(checkpoint_dir, X_OK);
     if (ret != 0) {
 	if (errno == 0) {
-	    warnp(__func__, "cannot search checkpoint directory: %s, errno: 0", chkptdir);
-	    return CHECKPT_ACCESS_ERRNO_ZERO_ERR;
+	    errp(99, __func__, "cannot search checkpoint directory: %s, errno: 0", checkpoint_dir);
 	} else if (errno == EACCES) {
-	    warn(__func__, "checkpoint directory not searchable: %s", chkptdir);
-	    return errno;
+	    err(99, __func__, "checkpoint directory not searchable: %s", checkpoint_dir);
 	} else {
-	    warn(__func__, "error while checking for a searchable checkpoint directory: %s, errno: %d", chkptdir, errno);
-	    return errno;
+	    err(99, __func__, "error while checking for a searchable checkpoint directory: %s, errno: %d", checkpoint_dir, errno);
 	}
+	return;	// NOT REACHED
     }
 
     /*
      * move to the checkpoint directory
      */
     errno = 0;
-    ret = chdir(chkptdir);
+    ret = chdir(checkpoint_dir);
     if (ret != 0) {
 	if (errno == 0) {
-	    warn(__func__, "cannot cd %s, errno: 0", chkptdir);
-	    return CHECKPT_CHDIR_ERRNO_ZERO_ERR;
+	    err(99, __func__, "cannot cd %s, errno: 0", checkpoint_dir);
 	} else {
-	    warnp(__func__, "cannot cd %s, errno: %d", chkptdir, errno);
-	    return errno;
+	    errp(99, __func__, "cannot cd %s, errno: %d", checkpoint_dir, errno);
 	}
+	return;	// NOT REACHED
     }
 
     /*
@@ -1329,12 +1234,11 @@ setup_checkpt(char *chkptdir, int chkptsecs)
     ret = sigaction(SIGALRM, &psa, NULL);
     if (ret != 0) {
 	if (errno == 0) {
-	    warn(__func__, "cannot sigaction SIGALRM, errno: 0");
-	    return CHECKPT_SETACTION_ERRNO_ZERO_ERR;
+	    err(99, __func__, "cannot sigaction SIGALRM, errno: 0");
 	} else {
-	    warnp(__func__, "cannot sigaction SIGALRM, errno: %d", errno);
-	    return errno;
+	    errp(99, __func__, "cannot sigaction SIGALRM, errno: %d", errno);
 	}
+	return;	// NOT REACHED
     }
     psa.sa_handler = record_sigalarm;
     sigemptyset(&psa.sa_mask);
@@ -1343,12 +1247,11 @@ setup_checkpt(char *chkptdir, int chkptsecs)
     ret = sigaction(SIGVTALRM, &psa, NULL);
     if (ret != 0) {
 	if (errno == 0) {
-	    warn(__func__, "cannot sigaction SIGVTALRM, errno: 0");
-	    return CHECKPT_SETACTION_ERRNO_ZERO_ERR;
+	    err(99, __func__, "cannot sigaction SIGVTALRM, errno: 0");
 	} else {
-	    warnp(__func__, "cannot sigaction SIGVTALRM, errno: %d", errno);
-	    return errno;
+	    errp(99, __func__, "cannot sigaction SIGVTALRM, errno: %d", errno);
 	}
+	return;	// NOT REACHED
     }
 
     /*
@@ -1362,47 +1265,45 @@ setup_checkpt(char *chkptdir, int chkptsecs)
     ret = sigaction(SIGINT, &psa, NULL);
     if (ret != 0) {
 	if (errno == 0) {
-	    warn(__func__, "cannot sigaction SIGINT, errno: 0");
-	    return CHECKPT_SETACTION_ERRNO_ZERO_ERR;
+	    err(99, __func__, "cannot sigaction SIGINT, errno: 0");
 	} else {
-	    warnp(__func__, "cannot sigaction SIGINT, errno: %d", errno);
-	    return errno;
+	    errp(99, __func__, "cannot sigaction SIGINT, errno: %d", errno);
 	}
+	return;	// NOT REACHED
     }
 
     /*
-     * setup checkpoint interval alarm if chkptsecs > 0
+     * setup checkpoint interval alarm if checkpoint_secs > 0
      */
-    if (chkptsecs > 0) {
+    if (checkpoint_secs > 0) {
 	errno = 0;
-	timer.it_interval.tv_sec = chkptsecs;
+	timer.it_interval.tv_sec = checkpoint_secs;
 	timer.it_interval.tv_usec = 0;
-	timer.it_value.tv_sec = chkptsecs;
+	timer.it_value.tv_sec = checkpoint_secs;
 	timer.it_value.tv_usec = 0;
 	ret = setitimer(ITIMER_VIRTUAL, &timer, NULL);
 	if (ret != 0) {
 	    if (errno == 0) {
-		warn(__func__, "cannot setitimer ITIMER_VIRTUAL, errno: 0");
-		return CHECKPT_SETITIMER_ERRNO_ZERO_ERR;
+		err(99, __func__, "cannot setitimer ITIMER_VIRTUAL, errno: 0");
 	    } else {
-		warnp(__func__, "cannot setitimer ITIMER_VIRTUAL, errno: %d", errno);
-		return errno;
+		errp(99, __func__, "cannot setitimer ITIMER_VIRTUAL, errno: %d", errno);
 	    }
+	    return;	// NOT REACHED
 	}
     }
 
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }
 
 
 /*
- * checkpt - form a checkpoint file with the current version
+ * checkpoint - form a checkpoint file with the current version
  *
  * given:
- *      chkptdir        directory under which checkpoint files will be created
+ *      checkpoint_dir        directory under which checkpoint files will be created
  *      h               multiplier of 2 (h must be >= 1)
  *      n               power of 2      (n must be >= 2)
  *      i               u term index    (i must be >= 2 and <= n)
@@ -1411,44 +1312,41 @@ setup_checkpt(char *chkptdir, int chkptsecs)
  *      u_term          Riesel sequence value: i.e., U(i) where
  *                      U(i+1) = u(i)^2-2 mod h*2^n-1.
  *
- * returns:
- *      0 - no errors detected
- *      < 0 - internal error
- *      > 0 - errno error value
+ * This function does not return on error.
  */
-int
-checkpt(const char *chkptdir, unsigned long h, unsigned long n, unsigned long i, mpz_t u_term)
+void
+checkpoint(const char *checkpoint_dir, unsigned long h, unsigned long n, unsigned long i, mpz_t u_term)
 {
     /*
      * firewall
      */
-    if (chkptdir == NULL) {
-	warn(__func__, "chkptdir is NULL");
-	return CHECKPT_INVALID_CHECKPT_ARG;
+    if (checkpoint_dir == NULL) {
+	err(99, __func__, "checkpoint_dir is NULL");
+	return;	// NOT REACHED
     }
     if (h < 1) {
-	warn(__func__, "h must be >= 1: %lu", h);
-	return CHECKPT_INVALID_CHECKPT_ARG;
+	err(99, __func__, "h must be >= 1: %lu", h);
+	return;	// NOT REACHED
     }
     if (n < 2) {
-	warn(__func__, "n must be >= 2: %lu", n);
-	return CHECKPT_INVALID_CHECKPT_ARG;
+	err(99, __func__, "n must be >= 2: %lu", n);
+	return;	// NOT REACHED
     }
     if (((h % 3 == 1) && (n % 2 == 0)) || ((h % 3 == 2) && (n % 2 == 1))) {
-	warn(__func__, "h*2^n-1: %lu*2^%lu-1 must not be a multiple of 3", h, n);
-	return CHECKPT_INVALID_CHECKPT_ARG;
+	err(99, __func__, "h*2^n-1: %lu*2^%lu-1 must not be a multiple of 3", h, n);
+	return;	// NOT REACHED
     }
     if (i < 2) {
-	warn(__func__, "i: %lu must be >= 2", i);
-	return CHECKPT_INVALID_CHECKPT_ARG;
+	err(99, __func__, "i: %lu must be >= 2", i);
+	return;	// NOT REACHED
     }
     if (i > n) {
-	warn(__func__, "i: %lu must be <= n: %lu", i, n);
-	return CHECKPT_INVALID_CHECKPT_ARG;
+	err(99, __func__, "i: %lu must be <= n: %lu", i, n);
+	return;	// NOT REACHED
     }
     if (u_term == NULL) {
-	warn(__func__, "u_term is NULL");
-	return CHECKPT_INVALID_CHECKPT_ARG;
+	err(99, __func__, "u_term is NULL");
+	return;	// NOT REACHED
     }
 
     /*
@@ -1470,5 +1368,5 @@ checkpt(const char *chkptdir, unsigned long h, unsigned long n, unsigned long i,
     /*
      * no errors detected
      */
-    return 0;
+    return;
 }

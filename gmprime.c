@@ -63,7 +63,7 @@
 
 #include "lucas.h"
 #include "debug.h"
-#include "checkpt.h"
+#include "checkpoint.h"
 
 /*
  * constants
@@ -76,17 +76,17 @@
 const char *program = NULL;	/* our name */
 const char version_string[] = "demo/gmprime-2.0";	/* package name and version */
 int debuglevel = DBG_NONE;	/* if > 0 then be verbose */
-static const char *usage = "[-v] [-c] [-t] [-T] [-d chkptdir] [-s secs] [-h] h n\n"
+static const char *usage = "[-v level] [-c] [-t] [-T] [-d checkpoint_dir] [-s secs] [-h] h n\n"
     "\n"
-    "\t-v\t\tverbose mode to stderr (def: output only the test result to stdout)\n"
+    "\t-v level\tverbosity level, debug msgs go to stderr (def: output only the test result to stdout)\n"
     "\t-c\t\toutput to stdout, calc code that may be used to verify partial results\n"
     "\t\t\t    example: gmprime -c 15 31 | calc -p\n"
     "\t-t\t\toutput total prime test times to stderr, (def: do not)\n"
     "\t-T\t\toutput extended prime test times to stderr, (def: do not)\n"
     "\t\t\t    NOTE: -T implies -t\n"
-    "\t-d chkptdir\tform checkpoint files under chkptdir (def: do not checkpoint)\n"
+    "\t-d checkpoint_dir\tform checkpoint files under checkpoint_dir (def: do not checkpoint)\n"
     "\t-s secs\t\tcheckpoint about every secs seconds (def: 3600 seconds)\n"
-    "\t\t\t    NOTE: -s secs requires -d chkptdir\n"
+    "\t\t\t    NOTE: -s secs requires -d checkpoint_dir\n"
     "\t\t\t    NOTE: secs must be >= 0, secs == 0 ==> checkpoint every term\n"
     "\n"
     "\t-h\t\tprint this help message and exit 2\n"
@@ -126,7 +126,6 @@ main(int argc, char *argv[])
 {
     char *h_arg;		/* h as a string */
     char *n_arg;		/* n as a string */
-    int ret;			/* snprintf() or checkpt() error return */
     mpz_t pow_2;		/* 2^n */
     mpz_t h_pow_2;		/* h*(2^n) */
     mpz_t riesel_cand;		/* Riesel candidate to test - n*(2^n)-1 */
@@ -138,7 +137,8 @@ main(int argc, char *argv[])
     mpz_t J_div_h;		/* used in mod calculation - int(J/h) */
     mpz_t J_mod_h;		/* used in mod calculation - J mod h then (J mod h)*(2^n) */
     int c;			/* option */
-    unsigned long i;		/* u term index - 1st Lucas term is U(2) = v(h) */
+    unsigned long i;		/* u term index - 1st Lucas term is U(2) = v(h) - 1st index is 2 */
+    // XXX unsigned long restored_i = 0;	/* u term index restored from checkpoint or 0 ==> test not started */
     /*
      * For Mersenne numbers, U(2) == 4
      */
@@ -152,12 +152,11 @@ main(int argc, char *argv[])
     int h_len;			/* length of string in h_str */
     int n_len;			/* length of string in n_str */
     const struct h_n *h_n_p;	/* pointer into small_h_n */
-    int verbose = 0;		/* be verbose */
     int calc_mode = 0;		/* output calc code so calc can verify partial results */
     int write_stats = 0;	/* output total prime stats to stderr */
     int write_extended_stats = 0;	/* output extended prime stats to stderr */
-    char *chkptdir = NULL;	/* form checkpoint files under chkptdir */
-    int chkptsecs = DEF_CHKPT_SECS;	/* checkpoint every chkptsecs seconds */
+    char *checkpoint_dir = NULL;	/* form checkpoint files under checkpoint_dir */
+    int checkpoint_secs = DEF_CHKPT_SECS;	/* checkpoint every checkpoint_secs seconds */
     int have_s = 0;		/* if we saw an -s secs argument */
     extern int optind;		/* argv index of the next arg */
     extern char *optarg;	/* optional argument */
@@ -166,10 +165,10 @@ main(int argc, char *argv[])
      * parse args
      */
     program = argv[0];
-    while ((c = getopt(argc, argv, "vctTd:s:h")) != -1) {
+    while ((c = getopt(argc, argv, "v:ctTd:s:h")) != -1) {
 	switch (c) {
 	case 'v':
-	    verbose = 1;
+	    debuglevel = strtol(optarg, NULL, 0);
 	    break;
 	case 'c':
 	    calc_mode = 1;
@@ -182,10 +181,10 @@ main(int argc, char *argv[])
 	    write_extended_stats = 1;
 	    break;
 	case 'd':
-	    chkptdir = optarg;
+	    checkpoint_dir = optarg;
 	    break;
 	case 's':
-	    chkptsecs = strtol(optarg, NULL, 0);
+	    checkpoint_secs = strtol(optarg, NULL, 0);
 	    have_s = 1;
 	    break;
 	case 'h':
@@ -200,34 +199,30 @@ main(int argc, char *argv[])
     argv += (optind - 1);
     argc -= (optind - 1);
     if (argc != 3) {
-	fprintf(stderr, "usage: %s %s", program, usage);
-	exit(4);
+	usage_err(4, __func__, "expected only 3 args");
+	exit(4); // NOT REACHED
     }
-    if (have_s && chkptdir == NULL) {
-	fprintf(stderr, "use of -s secs requires -d chkptdir\n");
-	fprintf(stderr, "usage: %s %s", program, usage);
-	exit(5);
+    if (have_s && checkpoint_dir == NULL) {
+	usage_err(5, __func__, "use of -s secs requires -d checkpoint_dir\n");
+	exit(5); // NOT REACHED
     }
-    if (chkptsecs < 0) {
-	fprintf(stderr, "secs: %d must be >= 0\n", chkptsecs);
-	fprintf(stderr, "usage: %s %s", program, usage);
-	exit(6);
+    if (checkpoint_secs < 0) {
+	usage_err(6, __func__, "secs: %d must be >= 0\n", checkpoint_secs);
+	exit(6); // NOT REACHED
     }
     h_arg = argv[1];
     errno = 0;
     h = strtoul(h_arg, NULL, 0);
     if (strchr(h_arg, '-') != NULL || errno != 0 || h <= 0) {
-	fprintf(stderr, "%s: FATAL: h must an integer > 0\n", program);
-	fprintf(stderr, "usage: %s %s", program, usage);
-	exit(7);
+	usage_err(7, __func__, "FATAL: h must an integer > 0\n");
+	exit(7); // NOT REACHED
     }
     n_arg = argv[2];
     errno = 0;
     n = strtoul(n_arg, NULL, 0);
     if (strchr(n_arg, '-') != NULL || errno != 0 || n <= 0) {
-	fprintf(stderr, "%s: FATAL: n must an integer > 0\n", program);
-	fprintf(stderr, "usage: %s %s", program, usage);
-	exit(8);
+	usage_err(8, __func__, "FATAL: n must an integer > 0\n");
+	exit(8); // NOT REACHED
     }
 
     /*
@@ -242,19 +237,15 @@ main(int argc, char *argv[])
      * force h to become odd
      */
     if (h % 2 == 0) {
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: converting even h: %ld into odd by increasing n: %ld\n", program, orig_h, orig_n);
-	}
+	dbg(DBG_MED, "converting even h: %ld into odd by increasing n: %ld\n", orig_h, orig_n);
 	while (h % 2 == 0 && h > 0) {
 	    h >>= 1;
 	    ++n;
 	}
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: new equivalent h: %lu and new equivalent n: %ld\n", program, h, n);
-	}
+	dbg(DBG_LOW, "new equivalent h: %lu and new equivalent n: %ld\n", h, n);
 	if (h <= 0) {
-	    fprintf(stderr, "%s: FATAL: new equivalent h: %lu <= 0\n", program, h);
-	    exit(9);
+	    err(9, __func__, "new equivalent h: %lu <= 0\n", h);
+	    exit(9); // NOT REACHED
 	}
     }
     /*
@@ -262,10 +253,11 @@ main(int argc, char *argv[])
      */
     h_str[0] = '\0';		// paranoia
     h_str[MAX_H_N_LEN] = '\0';	// paranoia
+    errno = 0;
     h_len = snprintf(h_str, MAX_H_N_LEN, "%lu", h);
     if (h_len < 0 || h_len >= MAX_H_N_LEN) {
-	fprintf(stderr, "%s: FATAL: converting h: %lu to string via snprintf returned: %d\n", program, h, h_len);
-	exit(10);
+	errp(10, __func__, "converting h: %lu to string via snprintf returned: %d\n", h, h_len);
+	exit(10); // NOT REACHED
     }
     h_str[h_len] = '\0';	// paranoia
     /*
@@ -273,10 +265,11 @@ main(int argc, char *argv[])
      */
     n_str[0] = '\0';		// paranoia
     n_str[MAX_H_N_LEN] = '\0';	// paranoia
+    errno = 0;
     n_len = snprintf(n_str, MAX_H_N_LEN, "%lu", n);
     if (n_len < 0 || n_len >= MAX_H_N_LEN) {
-	fprintf(stderr, "%s: FATAL: converting n: %lu to string via snprintf returned: %d\n", program, n, n_len);
-	exit(11);
+	errp(11, __func__, "converting n: %lu to string via snprintf returned: %d\n", n, n_len);
+	exit(11); // NOT REACHED
     }
     n_str[n_len] = '\0';	// paranoia
 
@@ -353,11 +346,33 @@ main(int argc, char *argv[])
     }
 
     /*
-     * initialize prime stats for start of test
+     * NOTE: the values of h and n have been established and will not change thruout the test
      */
-    if (write_stats || chkptdir != NULL) {
-	initialize_total_stats();
-    }
+    fflush(stdout); // paranoia
+    fflush(stderr); // paranoia
+    dbg(DBG_LOW, "testing %lu*2^%lu-1", h, n);
+    fflush(stderr); // paranoia
+
+    /*
+     * initialize prime stats for this run
+     *
+     * NOTE: This does not initialize prime stats for the total run.
+     *	     The prime stats for the total run is setup when we either
+     *	     restore from a checkpoint or determine the test is just starting.
+     */
+    initialize_beginrun_stats();
+
+    /*
+     * initialize prime stats for the start of this primality test
+     *
+     * If we restore from a checkpoint file later on,
+     * after the checkpoint system has been initialixzed
+     * and the most recent valid checkpont file is found,
+     * we may modify the total stats as per that checkpoint.
+     * If and until that happens, we will pretend the
+     * total prime stats started with this run.
+     */
+    initialize_total_stats();
 
     /*
      * initialize mp elements
@@ -374,44 +389,55 @@ main(int argc, char *argv[])
     mpz_init(J_mod_h);
 
     /*
+     * initialize checkpoint system
+     *
+     * This does not perform a restore from q checkpoint file.
+     * This just initializes internal data structures, sets up
+     * the checkpoint timer and creates the checkpoint directory
+     * if it it needed and does not exist.
+     */
+    initialize_checkpoint(checkpoint_dir, checkpoint_secs);
+
+    /*
      * compute h*2^n-1 - our test candidate
      */
     mpz_ui_pow_ui(pow_2, 2, n);
     mpz_mul_ui(h_pow_2, pow_2, h);
     mpz_sub_ui(riesel_cand, h_pow_2, 1);
-    if (verbose) {
-	fprintf(stderr, "%s: DEBUG: origianl test %lu*2^%lu-1\n", program, orig_h, orig_n);
-	fprintf(stderr, "%s: DEBUG: testing %lu*2^%lu-1 = ", program, h, n);
-	mpz_out_str(stderr, 10, riesel_cand);
-	fputc('\n', stderr);
+    if (debuglevel >= DBG_MED) {
+	dbg(DBG_MED, "origianl test %lu*2^%lu-1\n", orig_h, orig_n);
+	if (debuglevel >= DBG_HIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "riesel_cand", riesel_cand);
+	}
+	fflush(stderr); // paranoia
     }
     if (calc_mode) {
 	printf("print \"original test %ld * 2 ^ %ld - 1\";\n", orig_h, orig_n);
 	printf("print \"about to test %ld * 2 ^ %ld - 1\";\n", h, n);
 	printf("riesel_cand = %ld * 2 ^ %ld - 1;\n", h, n);
+	fflush(stdout); // paranoia
     }
 
     /*
      * firewall - h < 2^n
      */
     if (mpz_cmp_ui(pow_2, h) < 0) {
-	fprintf(stderr, "%s: FATAL: h: %lu must be < 2^n: 2^%lu\n", program, h, n);
-	exit(12);
+	err(12, __func__, "h: %lu must be < 2^n: 2^%lu\n", h, n);
+	exit(12); // NOT REACHED
     }
 
     /*
      * set initial u(2) value
      */
     v1 = gen_u2(h, n, riesel_cand, u_term);
-    if (verbose) {
-	fprintf(stderr, "%s: DEBUG: v[1] = %lu\n", program, v1);
-	fprintf(stderr, "%s: DEBUG: u[2] = ", program);
-	mpz_out_str(stderr, 10, u_term);
-	fputc('\n', stderr);
+    if (debuglevel >= DBG_MED) {
+	dbg(DBG_MED, "v[1] = %lu\n", v1);
+	if (debuglevel >= DBG_HIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "u[2]", u_term);
+	}
+	fflush(stderr); // paranoia
     }
     if (calc_mode) {
-	printf("print \"base(16),;\"\n");
-	printf("base(16),;\n");
 	printf("print \"read lucas;\"\n");
 	printf("read lucas;\n");
 	printf("print \"v1 = gen_v1(%s, %s);\";\n", h_str, n_str);
@@ -438,17 +464,14 @@ main(int argc, char *argv[])
 	printf("  print \"gmprime_u_term = \", gmprime_u_term;\n");
 	printf("  quit \"u[2] value not correctly set\";\n");
 	printf("}\n");
+	fflush(stdout); // paranoia
     }
 
     /*
      * if checkpointing, perform an initial checkpoint for U(2)
      */
-    if (chkptdir != NULL) {
-	ret = checkpt(chkptdir, h, n, 2, u_term);
-	if (ret != 0) {
-	    fprintf(stderr, "%s: FATAL: failed to form the initial checkpoint file, checkpt returned: %d\n", program, ret);
-	    exit(14);
-	}
+    if (checkpoint_dir != NULL) {
+	checkpoint(checkpoint_dir, h, n, 2, u_term);
     }
 
     /*
@@ -464,16 +487,16 @@ main(int argc, char *argv[])
 	if (calc_mode) {
 	    printf("print \"starting to compute u[%ld]\";\n", i);
 	    write_calc_int64_t(stdout, NULL, "i", i);
+	    fflush(stdout); // paranoia
 	}
 
 	/*
 	 * square
 	 */
 	mpz_mul(u_term_sq, u_term, u_term);
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: u[%ld]^2 = ", program, i);
-	    mpz_out_str(stderr, 10, u_term_sq);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_HIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "u_term_sq", u_term_sq);
+	    fflush(stderr); // paranoia
 	}
 	if (calc_mode) {
 	    printf("u_term_sq = u_term^2;\n");
@@ -486,16 +509,16 @@ main(int argc, char *argv[])
 	    printf("  print \"gmprime_u_term_sq = \", gmprime_u_term_sq;\n");
 	    printf("  quit \"bad square calculation\";\n");
 	    printf("}\n");
+	    fflush(stdout); // paranoia
 	}
 
 	/*
 	 * -2
 	 */
 	mpz_sub_ui(u_term_sq_2, u_term_sq, (unsigned long int) 2);
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: u[%ld]^2-2 = ", program, i);
-	    mpz_out_str(stderr, 10, u_term_sq_2);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_HIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "u_term_sq_2", u_term_sq_2);
+	    fflush(stderr); // paranoia
 	}
 	if (calc_mode) {
 	    printf("u_term_sq_2 = u_term_sq - 2;\n");
@@ -508,6 +531,7 @@ main(int argc, char *argv[])
 	    printf("  print \"gmprime_u_term_sq_2 = \", gmprime_u_term_sq_2;\n");
 	    printf("  quit \"bad -2 calculation\";\n");
 	    printf("}\n");
+	    fflush(stdout); // paranoia
 	}
 
 	/*
@@ -528,43 +552,35 @@ main(int argc, char *argv[])
 	 * NOTE: We use 2^n above to mean 2 raised to the power of n, not xor.
 	 */
 	mpz_fdiv_q_2exp(J, u_term_sq_2, n);	// J = int(u_term_sq_2 / 2^n)
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: J = ", program);
-	    mpz_out_str(stderr, 10, J);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_VHIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "J", J);
+	    fflush(stderr); // paranoia
 	}
 	mpz_tdiv_qr_ui(J_div_h, J_mod_h, J, h);	// compute both int(J/h) and (J mod h)
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: int(J/h) = ", program);
-	    mpz_out_str(stderr, 10, J_div_h);
-	    fputc('\n', stderr);
-	    fprintf(stderr, "%s: DEBUG: (J mod h) = ", program);
-	    mpz_out_str(stderr, 10, J_mod_h);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_VHIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "J_div_h", J_div_h);
+	    write_calc_mpz_hex(stderr, NULL, "J_mod_h", J_mod_h);
+	    fflush(stderr); // paranoia
 	}
 	mpz_mul_2exp(J_mod_h, J_mod_h, n);	// (J mod h)*(2^n)
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: (J mod h)*(2^n) = ", program);
-	    mpz_out_str(stderr, 10, J_mod_h);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_VHIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "J_mod_h_shifted", J_mod_h);
+	    fflush(stderr); // paranoia
 	}
 	mpz_fdiv_r_2exp(K, u_term_sq_2, n);	// K = bottom n bits of u_term_sq_2
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: K = ", program);
-	    mpz_out_str(stderr, 10, K);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_VHIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "K", K);
+	    fflush(stderr); // paranoia
 	}
 	mpz_add(u_term, J_mod_h, K);	// int(J/h) + (J mod h)*(2^n)
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: int(J/h) + (J mod h)*(2^n) = ", program);
-	    mpz_out_str(stderr, 10, u_term);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_VHIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "u_term_partial", u_term);
+	    fflush(stderr); // paranoia
 	}
 	mpz_add(u_term, u_term, J_div_h);	// u_term = u_term_sq_2 mod h*2^n-1
-	if (verbose) {
-	    fprintf(stderr, "%s: DEBUG: u_term = u_term_sq_2 mod h*2^n-1 = ", program);
-	    mpz_out_str(stderr, 10, u_term);
-	    fputc('\n', stderr);
+	if (debuglevel >= DBG_HIGH) {
+	    write_calc_mpz_hex(stderr, NULL, "u_term_mod_final", u_term);
+	    fflush(stderr); // paranoia
 	}
 
 	/*
@@ -610,11 +626,14 @@ main(int argc, char *argv[])
 	 */
 	while (mpz_cmp(u_term, riesel_cand) >= 0) {
 	    mpz_sub(u_term, u_term, riesel_cand);
-	    if (verbose) {
-		fprintf(stderr, "%s: DEBUG: u_term = u_term - h*2^n-1 = ", program);
-		mpz_out_str(stderr, 10, u_term);
-		fputc('\n', stderr);
+	    if (debuglevel >= DBG_HIGH) {
+		write_calc_mpz_hex(stderr, NULL, "u_term_subtract", u_term);
+		fflush(stderr); // paranoia
 	    }
+	}
+	if (debuglevel >= DBG_MED) {
+	    write_calc_mpz_hex(stderr, NULL, "u_term", u_term);
+	    fflush(stderr); // paranoia
 	}
 	if (calc_mode) {
 	    printf("u_term = u_term_sq_2 %% riesel_cand;\n");
@@ -627,7 +646,18 @@ main(int argc, char *argv[])
 	    printf("  print \"gmprime_u_term = \", gmprime_u_term;\n");
 	    printf("  quit \"bad mod calculation\";\n");
 	    printf("}\n");
+	    fflush(stdout); // paranoia
 	}
+    }
+    dbg(DBG_LOW, "finished testing %lu*2^%lu-1", h, n);
+    fflush(stderr); // paranoia
+
+    /*
+     * print final prime stats according to -t and/or -T
+     */
+    if (write_stats) {
+	update_stats();
+	write_calc_prime_stats(stderr, write_extended_stats);
     }
 
     /*
@@ -653,14 +683,6 @@ main(int argc, char *argv[])
 	    printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	}
 	exit(1);
-    }
-
-    /*
-     * print final prime stats according to -t and/or -T
-     */
-    if (write_stats) {
-	update_stats();
-	write_calc_prime_stats(stderr, write_extended_stats);
     }
 
     /*

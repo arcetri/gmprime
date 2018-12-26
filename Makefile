@@ -30,14 +30,16 @@
 SHELL= /bin/bash
 CC= cc
 CP= cp
-#CFLAGS= -std=c11 -Wall -Werror -pedantic -O3 -g3
-CFLAGS= -std=c11 -Wall -pedantic -O3 -g3
+CFLAGS= -std=c11 -Wall -Werror -pedantic -O3 -g3
+#CFLAGS= -std=c11 -Wall -pedantic -O3 -g3
 
 DESTDIR= /usr/local/bin
 INSTALL= install
 
-LUCAS= lucas.h lucas.c checkpt.c debug.c
-OBJECTS= lucas.o gmprime.o checkpt.o debug.o
+SRC_C= lucas.c checkpoint.c debug.c dyn_alloc.c
+SRC_H= lucas.h checkpoint.h debug.h dyn_alloc.h
+SRC= ${SRC_C} ${SRC_H}
+OBJECTS= lucas.o gmprime.o checkpoint.o debug.o dyn_alloc.o
 
 TEST_FILES= test/h-n.huge.txt test/h-n.large.txt test/h-n.med-composite.txt \
 	test/h-n.med.txt test/h-n.small-composite.txt test/h-n.small.txt \
@@ -47,19 +49,22 @@ TARGETS= gmprime
 
 all: ${TARGETS} ${TEST_FILES}
 
-lucas.o: ${LUCAS}
+lucas.o: lucas.c lucas.h
 	${CC} ${CFLAGS} lucas.c -c
 
-debug.o: ${LUCAS}
+debug.o: debug.c debug.h
 	${CC} ${CFLAGS} debug.c -c
 
-checkpt.o: ${LUCAS}
-	${CC} ${CFLAGS} checkpt.c -c
+checkpoint.o: checkpoint.c checkpoint.h
+	${CC} ${CFLAGS} checkpoint.c -c
 
-gmprime.o: gmprime.c ${LUCAS}
+gmprime.o: gmprime.c
 	${CC} ${CFLAGS} gmprime.c -c
 
-gmprime: ${OBJECTS} ${LUCAS}
+dyn_alloc.o: dyn_alloc.c dyn_alloc.h
+	${CC} ${CFLAGS} dyn_alloc.c -c
+
+gmprime: ${OBJECTS}
 	${CC} ${CFLAGS} ${OBJECTS} -lgmp -o $@
 
 configure:

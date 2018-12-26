@@ -1,5 +1,5 @@
 /*
- * checkpt - checkpoint and restore stilities
+ * checkpoint - checkpoint and restore stilities
  *
  * Copyright (c) 2018 by Landon Curt Noll.  All Rights Reserved.
  *
@@ -27,8 +27,8 @@
  */
 
 
-#if !defined(INCLUDE_CHECKPT_H)
-#define INCLUDE_CHECKPT_H
+#if !defined(INCLUDE_CHECKPOINT_H)
+#define INCLUDE_CHECKPOINT_H
 
 #include <stdint.h>
 #include <sys/time.h>
@@ -37,7 +37,7 @@
 /*
  * checkpoint fornmat version
  */
-#define CHECKPT_FMT_VERSION		(2)	// current version of checkpoint files
+#define CHECKPOINT_FMT_VERSION		(2)	// current version of checkpoint files
 
 #define DEF_CHKPT_SECS			(3600)	// default checkpoint interval
 
@@ -47,19 +47,19 @@
 /*
  * internal error codes
  */
-#define CHECKPT_NULL_PTR		(-1)	// NULL point argument found
-#define CHECKPT_WRITE_ERRNO_ZERO_ERR	(-2)	// write() error with zero errno
-#define CHECKPT_INVALID_STREAM		(-3)	// stream arg is not a valid stream
-#define CHECKPT_MPZ_OUT_STR_ERR		(-4)	// mpz_out_str error
-#define CHECKPT_GMTIIME_ERR		(-5)	// gmtime() error with zero errno
-#define CHECKPT_STRFTIME_ERR		(-6)	// strftime() error with zero errno
-#define CHECKPT_INVALID_CHECKPT_ARG	(-7)	// invalid argument passed to checkpt()
-#define CHECKPT_ACCESS_ERRNO_ZERO_ERR	(-8)	// access() returned with zero errno
-#define CHECKPT_MALLOC_ERRNO_ZERO_ERR	(-9)	// malloc() returned NULL with zero errno
-#define CHECKPT_MKDIR_ERRNO_ZERO_ERR	(-10)	// mkdir() returned NULL with zero errno
-#define CHECKPT_CHDIR_ERRNO_ZERO_ERR	(-11)	// chdir() returned with zero errno
-#define CHECKPT_SETACTION_ERRNO_ZERO_ERR	(-12)	// setaction() returned with zero errno
-#define CHECKPT_SETITIMER_ERRNO_ZERO_ERR	(-13)	// setitimer() returned with zero errno
+#define CHECKPOINT_NULL_PTR			(-1)	// NULL point argument found
+#define CHECKPOINT_WRITE_ERRNO_ZERO_ERR		(-2)	// write() error with zero errno
+#define CHECKPOINT_INVALID_STREAM		(-3)	// stream arg is not a valid stream
+#define CHECKPOINT_MPZ_OUT_STR_ERR		(-4)	// mpz_out_str error
+#define CHECKPOINT_GMTIIME_ERR			(-5)	// gmtime() error with zero errno
+#define CHECKPOINT_STRFTIME_ERR			(-6)	// strftime() error with zero errno
+#define CHECKPOINT_INVALID_ARG			(-7)	// invalid argument passed to checkpoint()
+#define CHECKPOINT_ACCESS_ERRNO_ZERO_ERR	(-8)	// access() returned with zero errno
+#define CHECKPOINT_MALLOC_ERRNO_ZERO_ERR	(-9)	// malloc() returned NULL with zero errno
+#define CHECKPOINT_MKDIR_ERRNO_ZERO_ERR		(-10)	// mkdir() returned NULL with zero errno
+#define CHECKPOINT_CHDIR_ERRNO_ZERO_ERR		(-11)	// chdir() returned with zero errno
+#define CHECKPOINT_SETACTION_ERRNO_ZERO_ERR	(-12)	// setaction() returned with zero errno
+#define CHECKPOINT_SETITIMER_ERRNO_ZERO_ERR	(-13)	// setitimer() returned with zero errno
 
 
 /*
@@ -79,18 +79,25 @@ struct prime_stats {
     long ru_nivcsw;		/* involuntary context switches */
 };
 
+/*
+ * checkpoint flags
+ */
+extern uint64_t checkpoint_alarm;	/* != 0 ==> a SIGALRM or SIGVTALRM went off, checkpoint and continue */
+extern uint64_t checkpoint_and_end;	/* != 0 ==> a SIGINT went off, checkpoint and exit */
+
 
 /*
  * extern functions
  */
-extern int write_calc_mpz_hex(FILE * stream, char *basename, char *subname, const mpz_t value);
-extern int write_calc_int64_t(FILE * stream, char *basename, char *subname, const int64_t value);
-extern int write_calc_uint64_t(FILE * stream, char *basename, char *subname, const uint64_t value);
-extern int write_calc_str(FILE * stream, char *basename, char *subname, const char *value);
-extern int write_calc_prime_stats(FILE * stream, int extended);
+extern void write_calc_mpz_hex(FILE *stream, char *basename, char *subname, const mpz_t value);
+extern void write_calc_int64_t(FILE *stream, char *basename, char *subname, const int64_t value);
+extern void write_calc_uint64_t(FILE *stream, char *basename, char *subname, const uint64_t value);
+extern void write_calc_str(FILE *stream, char *basename, char *subname, const char *value);
+extern void write_calc_prime_stats(FILE *stream, int extended);
+extern void initialize_checkpoint(char *checkpoint_dir, int checkpoint_secs);
 extern void initialize_beginrun_stats(void);
 extern void initialize_total_stats(void);
 extern void update_stats(void);
-extern int checkpt(const char *chkptdir, unsigned long h, unsigned long n, unsigned long i, mpz_t u_term);
+extern void checkpoint(const char *checkpoint_dir, unsigned long h, unsigned long n, unsigned long i, mpz_t u_term);
 
-#endif				/* !INCLUDE_CHECKPT_H */
+#endif				/* !INCLUDE_CHECKPOINT_H */
