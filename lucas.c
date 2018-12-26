@@ -5,16 +5,16 @@
  * calc resource file as distrivurted by calc in version 2.12.6.7.
  * For information on calc, see:
  *
- * 	http://www.isthe.com/chongo/tech/comp/calc/index.html
- * 	https://github.com/lcn2/calc
+ *      http://www.isthe.com/chongo/tech/comp/calc/index.html
+ *      https://github.com/lcn2/calc
  *
  * For information on lucas.cal see:
  *
- * 	https://github.com/lcn2/calc/blob/master/cal/lucas.cal
+ *      https://github.com/lcn2/calc/blob/master/cal/lucas.cal
  *
  * For a general tutorial on how to find a new largest known prime, see:
  *
- *	http://www.isthe.com/chongo/tech/math/prime/prime-tutorial.pdf
+ *      http://www.isthe.com/chongo/tech/math/prime/prime-tutorial.pdf
  *
  * Credit for C/gmp implemention: Konstantin Simeonov
  * Credit for the original lucas.cal calc implementation: Landon Curt Noll
@@ -46,7 +46,9 @@
 #include <limits.h>
 #include "lucas.h"
 
-/* A macro that checks if a number is odd (return true) or not (return false) */
+/*
+ * A macro that checks if a number is odd (return true) or not (return false)
+ */
 #define IS_ODD(NUMBER) \
         ((NUMBER) & 1ULL)
 
@@ -67,87 +69,25 @@
  *
  * For information on the x_tbl[] array and next_x, see:
  *
- * 	http://www.isthe.com/chongo/tech/math/prime/prime-tutorial.pdf
+ *      http://www.isthe.com/chongo/tech/math/prime/prime-tutorial.pdf
  *
  * See the page titled: "How to find V(1) when h is a multiple of 3" (around page 85)
  * and the page titled: "How to find V(1) when h is NOT a multiple of 3" (around page 86).
  */
 #define X_TBL_LEN 42U
-static const uint8_t x_tbl[X_TBL_LEN] = {
+static const unsigned long x_tbl[X_TBL_LEN] = {
     3, 5, 9, 11, 15, 17, 21, 29, 27, 35, 39, 41, 31, 45, 51, 55, 49, 59, 69, 65, 71, 57, 85, 81,
     95, 99, 77, 53, 67, 125, 111, 105, 87, 129, 101, 83, 165, 155, 149, 141, 121, 109
 };
-/* The next probable X value if the table does not satisfy the requirements */
+/*
+ * The next probable X value if the table does not satisfy the requirements
+ */
 static const uint8_t next_x = 167U;
-
-mpz_t riesel_cand; /* h*2^n-1 - Our Riesel test candidate */
-
 
 /*
  * static function declarations
  */
-static uint8_t rodseth_xhn(uint32_t x);
-static uint8_t gen_u2(uint64_t h, uint64_t n, uint64_t v1, mpz_t u2);
-static uint8_t gen_v1(uint64_t h, uint64_t n, uint64_t* v1);
-static uint64_t inline fcnt(uint64_t a);
-
-
-/*
- * gen_u0 - determine the initial Lucas sequence for h*2^n-1
- *
- * Historically many start the Lucas sequence with u(0).
- * Some, like the author of this code, prefer to start
- * with u(2).  This is so one may say:
- *
- *      2^p-1 is prime if u(p) = 0 mod 2^p-1
- * or:
- *      h*2^n-1 is prime if U(n) = 0 mod h*2^n-1
- *
- * See the function gen_u2() for details.
- *
- * input:
- *      h       - h as in h*2^n-1       (must be >= 1)
- *      n       - n as in h*2^n-1       (must be >= 1)
- *      u(2)    - initial value to be set for Lucas test on h*2^n-1 (see function below)
- *
- * returns:
- *      0      - successfully generated u(2)
- *    !=0      - failed to generate u(2)
- */
-uint8_t
-gen_u0(uint64_t h, uint64_t n, mpz_t u2){
-    uint64_t v1 = 0;     /* The v1 variable */
-    uint8_t v1_ret = 0;  /* The return value from gen_v1 */
-    uint8_t u2_ret = 0;  /* The return value from gen_u2 */
-
-    /* Initialize h*2^n-1 */
-    mpz_init_set_ui(riesel_cand, 2ULL);
-    mpz_pow_ui(riesel_cand, riesel_cand, n);
-    mpz_mul_ui(riesel_cand, riesel_cand, h);
-    mpz_sub_ui(riesel_cand, riesel_cand, 1ULL);
-
-    /*
-     * Generate v[1] based on the h and n values passed to the function
-     */
-    v1_ret = gen_v1(h, n, &v1);
-    if(v1_ret != 0) {
-        return v1_ret;
-    }
-
-    /*
-     * Generate the u[2] based on the v[1] that we have
-     */
-    u2_ret = gen_u2(h, n, v1, u2);
-    if (u2_ret != 0) {
-        return u2_ret;
-    }
-
-    /* Free the GNUMP memory */
-    mpz_clear(riesel_cand);
-
-    /* Return success */
-    return 0;
-}
+static int rodseth_xhn(uint32_t x, mpz_t riesel_cand);
 
 
 /*
@@ -194,74 +134,40 @@ gen_u0(uint64_t h, uint64_t n, mpz_t u2){
  * See the function gen_v1() for details on the value of v(1).
  *
  * input:
- *      h       - h as in h*2^n-1       (must be >= 1)
- *      n       - n as in h*2^n-1       (must be >= 1)
- *      v1      - gen_v1(h,n)           (must be >= 3) (see function below)
- *      u(2)    - initial value for Lucas test on h*2^n-1
+ *      h               h as in h*2^n-1       (must be >= 1)
+ *      n               n as in h*2^n-1       (must be >= 1)
+ *      riesel_cand     pre-computed h*2^n-1 as an mpz_t
+ *      u(2)            initial value for Lucas test on h*2^n-1
  *
  * returns:
- *      0       - success
- *    !=0       - failed to generate u(2)
+ *      v(1) used to compute u(2)
  */
-static uint8_t
-gen_u2(uint64_t h, uint64_t n, uint64_t v1, mpz_t u2) {
+unsigned long
+gen_u2(uint64_t h, uint64_t n, mpz_t riesel_cand, mpz_t u2)
+{
+    unsigned long v1;		/* v(1) based on h and n */
+    uint8_t hbits;		/* highest bit set in h */
+    uint8_t i;			/* counter */
+    mpz_t r;			/* low value: v(n) */
+    mpz_t s;			/* high value: v(n+1) */
+    mpz_t tmp;			/* Placeholder for some GNUMP values */
 
-    uint64_t shiftdown;        /* the power of 2 that divides h */
-    uint8_t hbits;             /* highest bit set in h */
-    uint8_t i;                 /* counter */
-    mpz_t r;                   /* low value: v(n) */
-    mpz_t s;                   /* high value: v(n+1) */
-    mpz_t tmp;                 /* Placeholder for some GNUMP values */
+    /*
+     * compute v(1)
+     */
+    v1 = gen_v1(h, n, riesel_cand);
 
-    /* Initialize the GNUMP variables */
+    /*
+     * Initialize the GNUMP variables
+     */
     mpz_init(tmp);
     mpz_init(r);
     mpz_init(s);
 
     /*
-     * check arg types
-     */
-    if (h < 0) {
-        return LT_ONE_H;
-    }
-    if (n < 1) {
-        return LT_ONE_N;
-    }
-    if (v1 < 3) {
-        return LT_THREE_V1;
-    }
-
-    /*
-     * reduce h if even
-     *
-     * we will force h to be odd by moving powers of two over to 2^n
-     */
-    shiftdown = fcnt(h);  /* h % 2^shiftdown == 0, max shiftdown */
-    if (shiftdown > 0) {
-        h >>= shiftdown;
-        n += shiftdown;
-    }
-
-    /*
-     * enforce the h > 0 and n >= 2 rules
-     */
-    if (h <= 0 || n < 1) {
-        return H_N_RULE_VIOL;
-    }
-
-    /*
-     * The highest turned on bit in the binary representation of h:
-     *                      h has 64 bits =>
-     *                      hbits = 64 - num_leading_zeros;
-     */
-    hbits = HIGHBIT(h);
-    if (hbits >= n) {
-        return H_N_RULE_VIOL;
-    }
-
-    /*
      * build up u2 based on the reversed bits of h
      */
+    hbits = HIGHBIT(h);
 
     /*
      * setup for bit loop r = v1
@@ -284,61 +190,93 @@ gen_u2(uint64_t h, uint64_t n, uint64_t v1, mpz_t u2) {
      * NOTE: In GNUMP the speed increase of the shift operations opposed to the usual mpz_mod is minimal
      */
     if (h == 1) {
-        /* return r%(h*2^n-1); */
-        mpz_mod(tmp, r, riesel_cand);
-        mpz_set(u2, tmp);
-        return 0;
+	/*
+	 * return r%(h*2^n-1);
+	 */
+	mpz_mod(tmp, r, riesel_cand);
+	mpz_set(u2, tmp);
+	return v1;
     }
 
-    /* cycle from second highest bit to second lowest bit of h */
-    for (i = hbits - (uint8_t)1; i > 0; --i) {
+    /*
+     * cycle from second highest bit to second lowest bit of h
+     */
+    for (i = hbits - (uint8_t) 1; i > 0; --i) {
 
-        /* bit(i) is 1 */
-        if(TEST_BIT(h, i)) {
+	/*
+	 * bit(i) is 1
+	 */
+	if (TEST_BIT(h, i)) {
 
-            /* compute v(2n+1) = v(r+1)*v(r)-v1 */
-            /* r = (r*s - v1) % (h*2^n-1); */
-            mpz_mul(tmp, r, s);
-            mpz_sub_ui(tmp, tmp, v1);
-            mpz_mod(r, tmp, riesel_cand);
+	    /*
+	     * compute v(2n+1) = v(r+1)*v(r)-v1
+	     */
+	    /*
+	     * r = (r*s - v1) % (h*2^n-1);
+	     */
+	    mpz_mul(tmp, r, s);
+	    mpz_sub_ui(tmp, tmp, v1);
+	    mpz_mod(r, tmp, riesel_cand);
 
-            /* compute v(2n+2) = v(r+1)^2-2 */
-            /* s = (s^2 - 2) % (h*2^n-1); */
-            mpz_mul(s, s, s);
-            mpz_sub_ui(s, s, 2ULL);
-            mpz_mod(s, s, riesel_cand);
+	    /*
+	     * compute v(2n+2) = v(r+1)^2-2
+	     */
+	    /*
+	     * s = (s^2 - 2) % (h*2^n-1);
+	     */
+	    mpz_mul(s, s, s);
+	    mpz_sub_ui(s, s, 2ULL);
+	    mpz_mod(s, s, riesel_cand);
 
-	/* bit(i) is 0 */
-        } else {
+	    /*
+	     * bit(i) is 0
+	     */
+	} else {
 
-            /* compute v(2n+1) = v(r+1)*v(r)-v1 */
-            /* s = (r*s - v1) % (h*2^n-1); */
-            mpz_mul(tmp, r, s);
-            mpz_sub_ui(tmp, tmp, v1);
-            mpz_mod(s, tmp, riesel_cand);
+	    /*
+	     * compute v(2n+1) = v(r+1)*v(r)-v1
+	     */
+	    /*
+	     * s = (r*s - v1) % (h*2^n-1);
+	     */
+	    mpz_mul(tmp, r, s);
+	    mpz_sub_ui(tmp, tmp, v1);
+	    mpz_mod(s, tmp, riesel_cand);
 
-            /* compute v(2n) = v(r)^-2 */
-            /* r = (r^2 - 2) % (h*2^n-1); */
-            mpz_mul(r, r, r);
-            mpz_sub_ui(r, r, 2ULL);
-            mpz_mod(r, r, riesel_cand);
-        }
+	    /*
+	     * compute v(2n) = v(r)^-2
+	     */
+	    /*
+	     * r = (r^2 - 2) % (h*2^n-1);
+	     */
+	    mpz_mul(r, r, r);
+	    mpz_sub_ui(r, r, 2ULL);
+	    mpz_mod(r, r, riesel_cand);
+	}
     }
 
-    /* we know that h is odd, so the final bit(0) is 1 */
-    /* r = (r*s - v1) % (h*2^n-1); */
+    /*
+     * we know that h is odd, so the final bit(0) is 1
+     */
+    /*
+     * r = (r*s - v1) % (h*2^n-1);
+     */
     mpz_mul(tmp, r, s);
     mpz_sub_ui(tmp, tmp, v1);
     mpz_mod(r, tmp, riesel_cand);
 
-    /* compute the final u2 return value */
+    /*
+     * compute the final u2 return value
+     */
     mpz_set(u2, r);
 
-    /* free the GNUMP variables and return success */
+    /*
+     * free the GNUMP variables and return success
+     */
     mpz_clear(r);
     mpz_clear(s);
     mpz_clear(tmp);
-    return 0;
+    return v1;
 }
 
 
@@ -490,39 +428,44 @@ gen_u2(uint64_t h, uint64_t n, uint64_t v1, mpz_t u2) {
  *
  ***
  *
- * input:
- *      h       h as in h*2^n-1 (h must be odd >= 1)
- *      n       n as in h*2^n-1 (must be >= 1)
+ * given:
+ *      h               h as in h*2^n-1 (h must be odd >= 1)
+ *      n               n as in h*2^n-1 (must be >= 1)
+ *      riesel_cand     pre-computed h*2^n-1 as an mpz_t
  *
- * output:
- *      returns v(1), or  is there is no quick way
+ * returns:
+ *      returns v(1)
  */
-static uint8_t
-gen_v1(uint64_t h, uint64_t n, uint64_t* v1){
-    uint32_t x;        /* potential v(1) to test */
-    uint8_t i;        /* x_tbl index */
-
-    /*
-     * check arg types
-     */
-    if (!IS_ODD(h)) {
-        return EVEN_H;
-    }
-    if (h < 1) {
-        return LT_ONE_H;
-    }
-    if (n < 1) {
-        return LT_ONE_N;
-    }
+unsigned long
+gen_v1(uint64_t h, uint64_t n, mpz_t riesel_cand)
+{
+    int x;			/* potential v(1) to test */
+    int i;			/* x_tbl index */
 
     /*
      * check for Case 1:      (h mod 3 != 0)
      */
     if (h % 3 != 0) {
 
-        /* v(1) is easy to compute */
-        (*v1) = 4ULL;
-        return 0;
+	/*
+	 * v(1) is easy to compute
+	 */
+	return 4;
+    }
+
+    /*
+     * special Mersenne number case: h == 1
+     *
+     * To match the historic Mersenne prime tests, we use v(1) == 4,
+     * even though 40% of the time v(1) == 3 is allowed.  This lets us
+     * match the results for those looking for Mersenne Primes (2^n-1).
+     */
+    if (h == 1) {
+
+	/*
+	 * v(1) is easy to compute for Mersenne number tests
+	 */
+	return 4;
     }
 
     /*
@@ -542,18 +485,17 @@ gen_v1(uint64_t h, uint64_t n, uint64_t* v1){
      */
     for (i = 0; i < X_TBL_LEN; ++i) {
 
-        /*
-         * test Ref4 condition 1
-         */
-        x = x_tbl[i];
-        if (rodseth_xhn(x) == 1) {
+	/*
+	 * test Ref4 condition 1
+	 */
+	x = x_tbl[i];
+	if (rodseth_xhn(x, riesel_cand) == 1) {
 
-            /*
-             * found a x that satisfies Ref4 condition 1
-             */
-            (*v1) = x;
-            return 0;
-        }
+	    /*
+	     * found a x that satisfies Ref4 condition 1
+	     */
+	    return x;
+	}
     }
 
     /*
@@ -562,13 +504,14 @@ gen_v1(uint64_t h, uint64_t n, uint64_t* v1){
      * of odd vules at next_x from here on.
      */
     x = next_x;
-    while (rodseth_xhn(x) != 1) {
-        x += 2;
+    while (rodseth_xhn(x, riesel_cand) != 1) {
+	x += 2;
     }
 
-    /* finally found a v(1) value beyond the end of the x_tbl[] */
-    (*v1) = x;
-    return 0;
+    /*
+     * finally found a v(1) value beyond the end of the x_tbl[]
+     */
+    return x;
 }
 
 
@@ -598,15 +541,14 @@ gen_v1(uint64_t h, uint64_t n, uint64_t* v1){
  *
  * input:
  *      x       potential v(1) value
- *      h       h as in h*2^n-1 (h must be odd >= 1)
- *      n       n as in h*2^n-1 (must be >= 1)
+ *      riesel_cand     pre-computed h*2^n-1 as an mpz_t
  *
  * returns:
  *      1       if v(1) == x for h*2^n-1
  *      0       otherwise
  */
-static uint8_t
-rodseth_xhn(uint32_t x)
+static int
+rodseth_xhn(uint32_t x, mpz_t riesel_cand)
 {
     mpz_t x_mp;
 
@@ -614,30 +556,36 @@ rodseth_xhn(uint32_t x)
      * firewall
      */
     if (x <= 2) {
-        return 0;
+	return 0;
     }
 
-    /* Initialize X in GNUMP */
+    /*
+     * Initialize X in GNUMP
+     */
     mpz_init_set_ui(x_mp, x);
 
-    /* x = x - 2 */
+    /*
+     * x = x - 2
+     */
     mpz_sub_ui(x_mp, x_mp, 2ULL);
 
     /*
      * Check for jacobi(x-2, h*2^n-1) == 1  (Ref4, condition 1) part 1
      */
     if (mpz_jacobi(x_mp, riesel_cand) != 1) {
-        return 0;
+	return 0;
     }
 
-    /* x = x + 2 */
+    /*
+     * x = x + 2
+     */
     mpz_add_ui(x_mp, x_mp, 4ULL);
 
     /*
      * Check for jacobi(x+2, h*2^n-1) == -1 (Ref4, condition 1) part 2
      */
     if (mpz_jacobi(x_mp, riesel_cand) != -1) {
-        return 0;
+	return 0;
     }
 
     /*
@@ -645,32 +593,4 @@ rodseth_xhn(uint32_t x)
      */
     mpz_clear(x_mp);
     return 1;
-}
-
-
-/*
- * Count how many times 2 divides integer a.
- *
- * input:
- *     a - the divided
- *
- * returns:
- *     the number of times 2 | a
- */
-static uint64_t inline
-fcnt(uint64_t a)
-{
-    /*
-     * NOTE: This can all be replaced with a call to: __builtin_ctzll(a)
-     *	     but for more clarity we use the current code, since the difference
-     *	     in speed is minimal.
-     */
-    uint64_t times = 0U;
-
-    /* this code can replaced with a call to: __builtin_ctzll(a) */
-    while (!IS_ODD(a)){
-        a >>= 1;
-        times++;
-    }
-    return times;
 }

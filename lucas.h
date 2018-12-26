@@ -5,16 +5,16 @@
  * calc resource file as distrivurted by calc in version 2.12.6.7.
  * For information on calc, see:
  *
- * 	http://www.isthe.com/chongo/tech/comp/calc/index.html
- * 	https://github.com/lcn2/calc
+ *      http://www.isthe.com/chongo/tech/comp/calc/index.html
+ *      https://github.com/lcn2/calc
  *
  * For information on lucas.cal see:
  *
- * 	https://github.com/lcn2/calc/blob/master/cal/lucas.cal
+ *      https://github.com/lcn2/calc/blob/master/cal/lucas.cal
  *
  * For a general tutorial on how to find a new largest known prime, see:
  *
- *	http://www.isthe.com/chongo/tech/math/prime/prime-tutorial.pdf
+ *      http://www.isthe.com/chongo/tech/math/prime/prime-tutorial.pdf
  *
  * Credit for C/gmp implemention: Konstantin Simeonov
  * Credit for the original lucas.cal calc implementation: Landon Curt Noll
@@ -42,32 +42,16 @@
  * Share and enjoy! :-)
  */
 
-#ifndef GEN_U2_LIBRARY_H
-#define GEN_U2_LIBRARY_H
+#if !defined(INCLUDE_LUCAS_H)
+#define INCLUDE_LUCAS_H
 
 #include <stdint.h>
 #include <gmp.h>
 
 /*
- * Error codes
+ * external functions
  */
-#define LT_ONE_H       1    /* h is < 1  */
-#define EVEN_H         2    /* h is even */
-#define LT_ONE_N       4    /* n is < 1  */
-#define LT_THREE_V1    8    /* v1 is < 3 */
-#define H_N_RULE_VIOL 16    /* h and n violate the rule 0 < h < n */
+extern unsigned long gen_u2(uint64_t h, uint64_t n, mpz_t riesel_cand, mpz_t u2);
+extern unsigned long gen_v1(uint64_t h, uint64_t n, mpz_t riesel_cand);
 
-/*
- * The library function call to generate the U_0 (first term) of the Lucas sequence of a candidate h*2^n-1.
- * input:
- *      h  - the value of h
- *      n  - the value of n
- *      u2 - the U term variable to be set by the function once U_0 is generated successfully
- *
- * returns:
- *      0 - Success
- *   != 0 - See error codes above
- */
-uint8_t gen_u0(uint64_t h, uint64_t n, mpz_t u2);
-
-#endif /* GEN_U2_LIBRARY_H */
+#endif				/* INCLUDE_LUCAS_H */
