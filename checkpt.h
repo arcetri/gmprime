@@ -34,17 +34,32 @@
 #include <sys/time.h>
 
 
-/* checkpoint fornmat version */
+/*
+ * checkpoint fornmat version
+ */
 #define CHECKPT_FMT_VERSION		(2)	// current version of checkpoint files
 
+#define DEF_CHKPT_SECS			(3600)	// default checkpoint interval
 
-/* internal error codes */
+#define DEF_DIR_MODE			(0775)	// default directory creation mode / permission
+
+
+/*
+ * internal error codes
+ */
 #define CHECKPT_NULL_PTR		(-1)	// NULL point argument found
 #define CHECKPT_WRITE_ERRNO_ZERO_ERR	(-2)	// write() error with zero errno
 #define CHECKPT_INVALID_STREAM		(-3)	// stream arg is not a valid stream
 #define CHECKPT_MPZ_OUT_STR_ERR		(-4)	// mpz_out_str error
 #define CHECKPT_GMTIIME_ERR		(-5)	// gmtime() error with zero errno
 #define CHECKPT_STRFTIME_ERR		(-6)	// strftime() error with zero errno
+#define CHECKPT_INVALID_CHECKPT_ARG	(-7)	// invalid argument passed to checkpt()
+#define CHECKPT_ACCESS_ERRNO_ZERO_ERR	(-8)	// access() returned with zero errno
+#define CHECKPT_MALLOC_ERRNO_ZERO_ERR	(-9)	// malloc() returned NULL with zero errno
+#define CHECKPT_MKDIR_ERRNO_ZERO_ERR	(-10)	// mkdir() returned NULL with zero errno
+#define CHECKPT_CHDIR_ERRNO_ZERO_ERR	(-11)	// chdir() returned with zero errno
+#define CHECKPT_SETACTION_ERRNO_ZERO_ERR	(-12)	// setaction() returned with zero errno
+#define CHECKPT_SETITIMER_ERRNO_ZERO_ERR	(-13)	// setitimer() returned with zero errno
 
 
 /*
@@ -65,16 +80,17 @@ struct prime_stats {
 };
 
 
-/* extern functions */
+/*
+ * extern functions
+ */
+extern int write_calc_mpz_hex(FILE * stream, char *basename, char *subname, const mpz_t value);
+extern int write_calc_int64_t(FILE * stream, char *basename, char *subname, const int64_t value);
+extern int write_calc_uint64_t(FILE * stream, char *basename, char *subname, const uint64_t value);
+extern int write_calc_str(FILE * stream, char *basename, char *subname, const char *value);
+extern int write_calc_prime_stats(FILE * stream, int extended);
 extern void initialize_beginrun_stats(void);
 extern void initialize_total_stats(void);
 extern void update_stats(void);
-extern int write_calc_mpz_hex(FILE *stream, char *name, const mpz_t value);
-extern int write_calc_int64_t(FILE *stream, char *name, const int64_t value);
-extern int write_calc_uint64_t(FILE *stream, char *name, const uint64_t value);
-extern int write_calc_str(FILE *stream, char *name, const char *value);
-extern int write_calc_timeval(FILE *stream, char *name, const struct timeval *value_ptr);
-extern int write_calc_date_time_str(FILE *stream, char *name, const struct timeval *value_ptr);
-extern int write_calc_prime_stats(FILE *stream);
+extern int checkpt(const char *chkptdir, unsigned long h, unsigned long n, unsigned long i, mpz_t u_term);
 
-#endif /* !INCLUDE_CHECKPT_H */
+#endif				/* !INCLUDE_CHECKPT_H */
