@@ -51,8 +51,8 @@
 void
 msg(const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int ret;		/* return code holder */
+    va_list ap;			/* argument pointer */
+    int ret;			/* return code holder */
 
     /*
      * Start the var arg setup and fetch our first arg
@@ -85,23 +85,23 @@ msg(const char *fmt, ...)
 
 
 /*
-* dbg - print debug message if we are verbose enough
-*
-* given:
-*      level   print message if >= verbosity level
-*      fmt     printf format
-*      ...
-*
-* Example:
-*
-*      dbg(DBG_MED, "foobar information");
-*      dbg(DBG_LOW, "curds: %s != whey: %d", curds, whey);
-*/
+ * dbg - print debug message if we are verbose enough
+ *
+ * given:
+ *      level   print message if >= verbosity level
+ *      fmt     printf format
+ *      ...
+ *
+ * Example:
+ *
+ *      dbg(DBG_MED, "foobar information");
+ *      dbg(DBG_LOW, "curds: %s != whey: %d", curds, whey);
+ */
 void
 dbg(int level, const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int ret;		/* return code holder */
+    va_list ap;			/* argument pointer */
+    int ret;			/* return code holder */
 
     /*
      * Start the var arg setup and fetch our first arg
@@ -136,22 +136,22 @@ dbg(int level, const char *fmt, ...)
 
 
 /*
-* warn - issue a warning message
-*
-* given:
-*      name    name of function issuing the warning
-*      fmt     format of the warning
-*      ...     optional format args
-*
-* Example:
-*
-*      warn(__func__, "unexpected foobar: %d", value);
-*/
+ * warn - issue a warning message
+ *
+ * given:
+ *      name    name of function issuing the warning
+ *      fmt     format of the warning
+ *      ...     optional format args
+ *
+ * Example:
+ *
+ *      warn(__func__, "unexpected foobar: %d", value);
+ */
 void
 warn(const char *name, const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int ret;		/* return code holder */
+    va_list ap;			/* argument pointer */
+    int ret;			/* return code holder */
 
     /*
      * Start the var arg setup and fetch our first arg
@@ -189,25 +189,25 @@ warn(const char *name, const char *fmt, ...)
 
 
 /*
-* warn - issue a warning message
-*
-* given:
-*      name    name of function issuing the warning
-*      fmt     format of the warning
-*      ...     optional format args
-*
-* Unlike warn() this function also prints an errno message.
-*
-* Example:
-*
-*      warnp(__func__, "unexpected foobar: %d", value);
-*/
+ * warn - issue a warning message
+ *
+ * given:
+ *      name    name of function issuing the warning
+ *      fmt     format of the warning
+ *      ...     optional format args
+ *
+ * Unlike warn() this function also prints an errno message.
+ *
+ * Example:
+ *
+ *      warnp(__func__, "unexpected foobar: %d", value);
+ */
 void
 warnp(const char *name, const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int ret;		/* return code holder */
-    int saved_errno;	/* errno at function start */
+    va_list ap;			/* argument pointer */
+    int ret;			/* return code holder */
+    int saved_errno;		/* errno at function start */
 
     /*
      * Start the var arg setup and fetch our first arg
@@ -247,25 +247,25 @@ warnp(const char *name, const char *fmt, ...)
 
 
 /*
-* err - issue a fatal error message and exit
-*
-* given:
-*      exitcode        value to exit with
-*      name            name of function issuing the warning
-*      fmt             format of the warning
-*      ...             optional format args
-*
-* This function does not return.
-*
-* Example:
-*
-*      err(99, __func__, "bad foobar: %s", message);
-*/
+ * err - issue a fatal error message and exit
+ *
+ * given:
+ *      exitcode        value to exit with
+ *      name            name of function issuing the warning
+ *      fmt             format of the warning
+ *      ...             optional format args
+ *
+ * This function does not return.
+ *
+ * Example:
+ *
+ *      err(99, __func__, "bad foobar: %s", message);
+ */
 void
 err(int exitcode, const char *name, const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int ret;		/* return code holder */
+    va_list ap;			/* argument pointer */
+    int ret;			/* return code holder */
 
     /*
      * Start the var arg setup and fetch our first arg
@@ -317,27 +317,27 @@ err(int exitcode, const char *name, const char *fmt, ...)
 
 
 /*
-* errp - issue a fatal error message, errno string and exit
-*
-* given:
-*      exitcode        value to exit with
-*      name            name of function issuing the warning
-*      fmt             format of the warning
-*      ...             optional format args
-*
-* This function does not return.  Unlike err() this function
-* also prints an errno message.
-*
-* Example:
-*
-*      errp(99, __func__, "I/O failure: %s", message);
-*/
+ * errp - issue a fatal error message, errno string and exit
+ *
+ * given:
+ *      exitcode        value to exit with
+ *      name            name of function issuing the warning
+ *      fmt             format of the warning
+ *      ...             optional format args
+ *
+ * This function does not return.  Unlike err() this function
+ * also prints an errno message.
+ *
+ * Example:
+ *
+ *      errp(99, __func__, "I/O failure: %s", message);
+ */
 void
 errp(int exitcode, const char *name, const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int ret;		/* return code holder */
-    int saved_errno;	/* errno at function start */
+    va_list ap;			/* argument pointer */
+    int ret;			/* return code holder */
+    int saved_errno;		/* errno at function start */
 
     /*
      * Start the var arg setup and fetch our first arg
@@ -391,26 +391,26 @@ errp(int exitcode, const char *name, const char *fmt, ...)
 
 
 /*
-* usage_err - issue a fatal error message and exit
-*
-* given:
-*      exitcode        value to exit with (must be 0 <= exitcode < 256)
-*                      exitcode == 0 ==> just how to use -h for usage help and exit(0)
-*      name            name of function issuing the warning
-*      fmt             format of the warning
-*      ...             optional format args
-*
-* This function does not return.
-*
-* Example:
-*
-*      usage_err(99, __func__, "bad foobar: %s", message);
-*/
+ * usage_err - issue a fatal error message and exit
+ *
+ * given:
+ *      exitcode        value to exit with (must be 0 <= exitcode < 256)
+ *                      exitcode == 0 ==> just how to use -h for usage help and exit(0)
+ *      name            name of function issuing the warning
+ *      fmt             format of the warning
+ *      ...             optional format args
+ *
+ * This function does not return.
+ *
+ * Example:
+ *
+ *      usage_err(99, __func__, "bad foobar: %s", message);
+ */
 void
 usage_err(int exitcode, const char *name, const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int ret;		/* return code holder */
+    va_list ap;			/* argument pointer */
+    int ret;			/* return code holder */
 
     /*
      * Start the var arg setup and fetch our first arg
@@ -469,28 +469,28 @@ usage_err(int exitcode, const char *name, const char *fmt, ...)
 
 
 /*
-* usage_errp - issue a fatal error message, errno string and exit
-*
-* given:
-*      exitcode        value to exit with (must be 0 <= exitcode < 256)
-*                      exitcode == 0 ==> just how to use -h for usage help and exit(0)
-*      name            name of function issuing the warning
-*      fmt             format of the warning
-*      ...             optional format args
-*
-* This function does not return.  Unlike err() this function
-* also prints an errno message.
-*
-* Example:
-*
-*      usage_errp(99, __func__, "bad foobar: %s", message);
-*/
+ * usage_errp - issue a fatal error message, errno string and exit
+ *
+ * given:
+ *      exitcode        value to exit with (must be 0 <= exitcode < 256)
+ *                      exitcode == 0 ==> just how to use -h for usage help and exit(0)
+ *      name            name of function issuing the warning
+ *      fmt             format of the warning
+ *      ...             optional format args
+ *
+ * This function does not return.  Unlike err() this function
+ * also prints an errno message.
+ *
+ * Example:
+ *
+ *      usage_errp(99, __func__, "bad foobar: %s", message);
+ */
 void
 usage_errp(int exitcode, const char *name, const char *fmt, ...)
 {
-    va_list ap;		/* argument pointer */
-    int saved_errno;	/* errno at function start */
-    int ret;		/* return code holder */
+    va_list ap;			/* argument pointer */
+    int saved_errno;		/* errno at function start */
+    int ret;			/* return code holder */
 
     /*
      * Start the var arg setup and fetch our first arg

@@ -25,12 +25,12 @@
  * Share and enjoy! :-)
  */
 
-#ifndef DEBUG_H
-#   define DEBUG_H
+#if !defined(INCLUDE_DEBUG_H)
+#    define INCLUDE_DEBUG_H
 
-extern const char * program;			// our name
-extern const char version_string[];		// our package name and version plus newline
-extern int debuglevel;				// print debug messages <= debuglevel
+extern const char *program;	// our name
+extern const char version_string[];	// our package name and version plus newline
+extern int debuglevel;		// print debug messages <= debuglevel
 
 /*
  * DEBUG_LINT - if defined, debug calls turn into fprintf to stderr calls
@@ -86,33 +86,33 @@ extern int debuglevel;				// print debug messages <= debuglevel
  * not limited to the use of debug functions.
  */
 
-#   if defined(DEBUG_LINT) && __STDC_VERSION__ >= 199901L
+#    if defined(DEBUG_LINT) && __STDC_VERSION__ >= 199901L
 
-#      define msg(...) fprintf(stderr, __VA_ARGS__)
-#      define dbg(level, ...) ((debuglevel >= (level)) ? printf(__VA_ARGS__) : true)
-#      define warn(name, ...) (fprintf(stderr, "%s: ", (name)), \
+#        define msg(...) fprintf(stderr, __VA_ARGS__)
+#        define dbg(level, ...) ((debuglevel >= (level)) ? printf(__VA_ARGS__) : true)
+#        define warn(name, ...) (fprintf(stderr, "%s: ", (name)), \
 			 fprintf(stderr, __VA_ARGS__))
-#      define warnp(name, ...) (fprintf(stderr, "%s: ", (name)), \
+#        define warnp(name, ...) (fprintf(stderr, "%s: ", (name)), \
 			  fprintf(stderr, __VA_ARGS__), \
 			  fputc('\n', stderr), \
 			  perror(__FUNCTION__))
-#      define err(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
+#        define err(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
 				  fprintf(stderr, __VA_ARGS__), \
 				  exit(exitcode))
-#      define errp(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
+#        define errp(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
 				   fprintf(stderr, __VA_ARGS__), \
 				   fputc('\n', stderr), \
 				   perror(__FUNCTION__), \
 				   exit(exitcode))
-#      define usage_err(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
+#        define usage_err(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
 					       fprintf(stderr, __VA_ARGS__), \
 					       exit(exitcode))
-#      define usage_errp(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
+#        define usage_errp(exitcode, name, ...) (fprintf(stderr, "%s: ", (name)), \
 						fprintf(stderr, __VA_ARGS__), \
 						fputc('\n', stderr), perror(__FUNCTION__), \
 						exit(exitcode))
 
-#   else			// DEBUG_LINT && __STDC_VERSION__ >= 199901L
+#    else			// DEBUG_LINT && __STDC_VERSION__ >= 199901L
 
 extern void msg(const char *fmt, ...);
 extern void dbg(int level, const char *fmt, ...);
@@ -123,14 +123,14 @@ extern void errp(int exitcode, const char *name, const char *fmt, ...);
 extern void usage_err(int exitcode, const char *name, const char *fmt, ...);
 extern void usage_errp(int exitcode, const char *name, const char *fmt, ...);
 
-#   endif			// DEBUG_LINT && __STDC_VERSION__ >= 199901L
+#    endif			// DEBUG_LINT && __STDC_VERSION__ >= 199901L
 
-#   define DBG_NONE (0)		// no debugging
-#   define DBG_LOW (1)		// minimal debugging
-#   define DBG_MED (3)		// somewhat more debugging
-#   define DBG_HIGH (5)		// verbose debugging
-#   define DBG_VHIGH (7)	// very verbose debugging
-#   define DBG_VVHIGH (9)	// very very verbose debugging
-#   define FORCED_EXIT (255)	// exit(255) on bad exit code
+#    define DBG_NONE (0)	// no debugging
+#    define DBG_LOW (1)		// minimal debugging
+#    define DBG_MED (3)		// somewhat more debugging
+#    define DBG_HIGH (5)	// verbose debugging
+#    define DBG_VHIGH (7)	// very verbose debugging
+#    define DBG_VVHIGH (9)	// very very verbose debugging
+#    define FORCED_EXIT (255)	// exit(255) on bad exit code
 
-#endif				/* DEBUG_H */
+#endif				/* INCLUDE_DEBUG_H */
