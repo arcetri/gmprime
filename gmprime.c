@@ -74,7 +74,7 @@
  * globals
  */
 const char *program = NULL;	/* our name */
-const char version_string[] = "demo/gmprime-2.0";	/* package name and version */
+const char version_string[] = "demo/gmprime-3.0";	/* package name and version */
 int debuglevel = DBG_NONE;	/* if > 0 then be verbose */
 static const char *usage = "[-v level] [-c] [-t] [-T] [-d checkpoint_dir] [-s secs] [-h] h n\n"
     "\n"
@@ -142,24 +142,24 @@ main(int argc, char *argv[])
     /*
      * For Mersenne numbers, U(2) == 4
      */
-    unsigned long h;		/* multiplier of 2 */
-    unsigned long n;		/* power of 2 */
-    unsigned long orig_h;	/* original value of h */
-    unsigned long orig_n;	/* original value of n */
-    unsigned long v1;		/* v(1) for h and n */
+    unsigned long h;			/* multiplier of 2 */
+    unsigned long n;			/* power of 2 */
+    unsigned long orig_h;		/* original value of h */
+    unsigned long orig_n;		/* original value of n */
+    unsigned long v1;			/* v(1) for h and n */
     char h_str[MAX_H_N_LEN + 1];	/* h as a string */
     char n_str[MAX_H_N_LEN + 1];	/* h as a string */
-    int h_len;			/* length of string in h_str */
-    int n_len;			/* length of string in n_str */
-    const struct h_n *h_n_p;	/* pointer into small_h_n */
-    int calc_mode = 0;		/* output calc code so calc can verify partial results */
-    int write_stats = 0;	/* output total prime stats to stderr */
+    int h_len;				/* length of string in h_str */
+    int n_len;				/* length of string in n_str */
+    const struct h_n *h_n_p;		/* pointer into small_h_n */
+    int calc_mode = 0;			/* output calc code so calc can verify partial results */
+    int write_stats = 0;		/* output total prime stats to stderr */
     int write_extended_stats = 0;	/* output extended prime stats to stderr */
     char *checkpoint_dir = NULL;	/* form checkpoint files under checkpoint_dir */
     int checkpoint_secs = DEF_CHKPT_SECS;	/* checkpoint every checkpoint_secs seconds */
-    int have_s = 0;		/* if we saw an -s secs argument */
-    extern int optind;		/* argv index of the next arg */
-    extern char *optarg;	/* optional argument */
+    int have_s = 0;			/* if we saw an -s secs argument */
+    extern int optind;			/* argv index of the next arg */
+    extern char *optarg;		/* optional argument */
 
     /*
      * parse args
@@ -203,25 +203,25 @@ main(int argc, char *argv[])
 	exit(4); // NOT REACHED
     }
     if (have_s && checkpoint_dir == NULL) {
-	usage_err(5, __func__, "use of -s secs requires -d checkpoint_dir\n");
+	usage_err(5, __func__, "use of -s secs requires -d checkpoint_dir");
 	exit(5); // NOT REACHED
     }
     if (checkpoint_secs < 0) {
-	usage_err(6, __func__, "secs: %d must be >= 0\n", checkpoint_secs);
+	usage_err(6, __func__, "secs: %d must be >= 0", checkpoint_secs);
 	exit(6); // NOT REACHED
     }
     h_arg = argv[1];
     errno = 0;
     h = strtoul(h_arg, NULL, 0);
     if (strchr(h_arg, '-') != NULL || errno != 0 || h <= 0) {
-	usage_err(7, __func__, "FATAL: h must an integer > 0\n");
+	usage_err(7, __func__, "FATAL: h must an integer > 0");
 	exit(7); // NOT REACHED
     }
     n_arg = argv[2];
     errno = 0;
     n = strtoul(n_arg, NULL, 0);
     if (strchr(n_arg, '-') != NULL || errno != 0 || n <= 0) {
-	usage_err(8, __func__, "FATAL: n must an integer > 0\n");
+	usage_err(8, __func__, "FATAL: n must an integer > 0");
 	exit(8); // NOT REACHED
     }
 
@@ -237,14 +237,14 @@ main(int argc, char *argv[])
      * force h to become odd
      */
     if (h % 2 == 0) {
-	dbg(DBG_MED, "converting even h: %ld into odd by increasing n: %ld\n", orig_h, orig_n);
+	dbg(DBG_LOW, "converting even h: %ld into odd by increasing n: %ld", orig_h, orig_n);
 	while (h % 2 == 0 && h > 0) {
 	    h >>= 1;
 	    ++n;
 	}
-	dbg(DBG_LOW, "new equivalent h: %lu and new equivalent n: %ld\n", h, n);
+	dbg(DBG_LOW, "new equivalent h: %lu and new equivalent n: %ld", h, n);
 	if (h <= 0) {
-	    err(9, __func__, "new equivalent h: %lu <= 0\n", h);
+	    err(9, __func__, "new equivalent h: %lu <= 0", h);
 	    exit(9); // NOT REACHED
 	}
     }
@@ -256,7 +256,7 @@ main(int argc, char *argv[])
     errno = 0;
     h_len = snprintf(h_str, MAX_H_N_LEN, "%lu", h);
     if (h_len < 0 || h_len >= MAX_H_N_LEN) {
-	errp(10, __func__, "converting h: %lu to string via snprintf returned: %d\n", h, h_len);
+	errp(10, __func__, "converting h: %lu to string via snprintf returned: %d", h, h_len);
 	exit(10); // NOT REACHED
     }
     h_str[h_len] = '\0';	// paranoia
@@ -268,7 +268,7 @@ main(int argc, char *argv[])
     errno = 0;
     n_len = snprintf(n_str, MAX_H_N_LEN, "%lu", n);
     if (n_len < 0 || n_len >= MAX_H_N_LEN) {
-	errp(11, __func__, "converting n: %lu to string via snprintf returned: %d\n", n, n_len);
+	errp(11, __func__, "converting n: %lu to string via snprintf returned: %d", n, n_len);
 	exit(11); // NOT REACHED
     }
     n_str[n_len] = '\0';	// paranoia
@@ -405,7 +405,7 @@ main(int argc, char *argv[])
     mpz_mul_ui(h_pow_2, pow_2, h);
     mpz_sub_ui(riesel_cand, h_pow_2, 1);
     if (debuglevel >= DBG_MED) {
-	dbg(DBG_MED, "origianl test %lu*2^%lu-1\n", orig_h, orig_n);
+	dbg(DBG_MED, "origianl test %lu*2^%lu-1", orig_h, orig_n);
 	if (debuglevel >= DBG_HIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "riesel_cand", riesel_cand);
 	}
@@ -422,7 +422,7 @@ main(int argc, char *argv[])
      * firewall - h < 2^n
      */
     if (mpz_cmp_ui(pow_2, h) < 0) {
-	err(12, __func__, "h: %lu must be < 2^n: 2^%lu\n", h, n);
+	err(12, __func__, "h: %lu must be < 2^n: 2^%lu", h, n);
 	exit(12); // NOT REACHED
     }
 
@@ -431,7 +431,7 @@ main(int argc, char *argv[])
      */
     v1 = gen_u2(h, n, riesel_cand, u_term);
     if (debuglevel >= DBG_MED) {
-	dbg(DBG_MED, "v[1] = %lu\n", v1);
+	dbg(DBG_MED, "v[1] = %lu", v1);
 	if (debuglevel >= DBG_HIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "u[2]", u_term);
 	}
