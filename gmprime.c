@@ -3,12 +3,13 @@
  *
  * usage:
  *
- *      gmprime h n
+ *      gmprime [-v level] [-c] [-t] [-T] [-d checkpoint_dir [-i]] [-s secs] [-h] [h n]
  *
- *      h       power of 2 multuplier (as in h*2^n-1)
- *      n       power of 2 (as in h*2^n-1)
+ * See the usage message for details.
  *
- * NOTE: Sometimes u(2) is called u(0).
+ * NOTE: In some litature they use U(0) or U(1) as the first term.
+ * 	 We use U(2) so that U(N) is the critical value.  I.e., the
+ * 	 primality of h*2^n-1 depends in U(N) being a multiple of h*2^n-1.
  *
  * NOTE: This is for demo purposes only.  One should certailny improve
  *       the robustness and performance of this code!!!
@@ -19,15 +20,11 @@
  *
  *       The source to calc is freely available via links from the above URL.
  *
- * Exit codes:
- *
- *      0       h*2^n-1 is prime (also prints "prime" to stdout)
- *      1       h*2^n-1 is not prime (also prints "composite" to stdout)
- *      >1      some error occurred
+ * See the usage message below and gmprime.h for information on exit codes.
  *
  * NOTE: Comments in this source use 2^n to mean 2 raised to the power of n, not xor.
  *
- * Copyright (c) 2013,2017,2018 by Landon Curt Noll.  All Rights Reserved.
+ * Copyright (c) 2013,2017-2020 by Landon Curt Noll.  All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and
  * its documentation for any purpose and without fee is hereby granted,
@@ -52,6 +49,8 @@
  * Share and enjoy! :-)
  */
 
+/* NUMERIC EXIT CODES: 10-39	gmprime.c - reserved for internal errors */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,7 +60,8 @@
 #include <ctype.h>
 #include <getopt.h>
 
-#include "lucas.h"
+#include "gmprime.h"
+#include "riesel.h"
 #include "debug.h"
 #include "checkpoint.h"
 
@@ -74,30 +74,51 @@
  * globals
  */
 const char *program = NULL;	/* our name */
-const char version_string[] = "demo/gmprime-3.0";	/* package name and version */
+const char version_string[] = "gmprime-3.1";	/* package name and version */
 int debuglevel = DBG_NONE;	/* if > 0 then be verbose */
-static const char *usage = "[-v level] [-c] [-t] [-T] [-d checkpoint_dir] [-s secs] [-h] h n\n"
+static const char *usage = "[-v level] [-c] [-t] [-T] [-d checkpoint_dir [-i] [-s secs] [-m multiple]] [-h] [h n]\n"
     "\n"
-    "\t-v level\tverbosity level, debug msgs go to stderr (def: output only the test result to stdout)\n"
-    "\t-c\t\toutput to stdout, calc code that may be used to verify partial results\n"
-    "\t\t\t    example: gmprime -c 15 31 | calc -p\n"
-    "\t-t\t\toutput total prime test times to stderr, (def: do not)\n"
-    "\t-T\t\toutput extended prime test times to stderr, (def: do not)\n"
-    "\t\t\t    NOTE: -T implies -t\n"
-    "\t-d checkpoint_dir\tform checkpoint files under checkpoint_dir (def: do not checkpoint)\n"
-    "\t-s secs\t\tcheckpoint about every secs seconds (def: 3600 seconds)\n"
-    "\t\t\t    NOTE: -s secs requires -d checkpoint_dir\n"
-    "\t\t\t    NOTE: secs must be >= 0, secs == 0 ==> checkpoint every term\n"
+    "	-v level	verbosity level, debug msgs go to stderr (def: output only the test result to stdout)\n"
     "\n"
-    "\t-h\t\tprint this help message and exit 2\n"
+    "	-c		output to stdout, calc code that may be used to verify partial results\n"
+    "			    NOTE: example: gmprime -c 15 31 | calc -p\n"
+    "			    NOTE: For info on calc, see: http://www.isthe.com/chongo/tech/comp/calc/index.html\n"
     "\n"
-    "\th\t\tpower of 2 multuplier (as in h*2^n-1) must be > 0 and < 2^n\n"
-    "\tn\t\tpower of 2 (as in h*2^n-1) must be > 0\n"
+    "	-t		output total prime test times to stderr, (def: do not)\n"
+    "	-T		output extended prime test times to stderr, (def: do not)\n"
+    "			    NOTE: -T implies -t\n"
     "\n"
-    "\tExit codes:\n"
+    "	-d checkpoint_dir	checkpoint files are in directory checkpoint_dir (def: do not checkpoint)\n"
+    "	-i		force checkpoint directory to be initialized (requires -d checkpoint_dir, def: do not reinitialize)\n"
+    "			    NOTE: -i requires -d checkpoint_dir\n"
+    "	-s secs		checkpoint about every secs seconds (def: 3600 seconds)\n"
+    "			    NOTE: -s secs requires -d checkpoint_dir\n"
+    "			    NOTE: secs must be >= 0, secs == 0 ==> checkpoint every term\n"
+    "	-m multiple	checkpoint when Lucas sequence index is a multiple (def: no index multiple checkpointng)\n"
+    "			    NOTE: -u u_terms requires -d checkpoint_dir\n"
     "\n"
-    "\t0\th*2^n-1 is prime (also prints 'prime' to stdout)\n"
-    "\t1\th*2^n-1 is not prime (also prints 'composite' to stdout)\n" "\t>1\tsome error occurred\n";
+    "	-h		print this help message and exit 8\n"
+    "\n"
+    "	h		power of 2 multuplier (as in h*2^n-1) must be > 0 and < 2^n (def: restored from checkpoint_dir)\n"
+    "	n		power of 2 (as in h*2^n-1) must be > 0 (def: restored from checkpoint_dir)\n"
+    "\n"
+    "	Exit codes:\n"
+    "\n"
+    "	0	h*2^n-1 is prime (also prints 'prime' to stdout)\n"
+    "	1	h*2^n-1 is not prime (also prints 'composite' to stdout)\n"
+    "\n"
+    "	2	h*2^n-1 is not a number for which the Riesel test applies (e.g., h > 2^n)\n"
+    "\n"
+    "	3	reserved for some test problem not related to an internal failure\n"
+    "\n"
+    "	4	checkpoint directory missing or not accessible\n"
+    "	5	checkpoint directory locked by another process\n"
+    "	6	cannot restore from checkpoint, checkpoint incomplete or malformed\n"
+    "	7	caught a signal, checkpointed and gracefully exited\n"
+    "	8	help mode: print usage message and exit 8\n"
+    "	9	invalid, incompatible or missing flags and arguments\n"
+    "\n"
+    "	10-255	some interal fatal error occurred\n";
 
 /*
  * list of very small verified Riesel primes that we special case
@@ -124,23 +145,25 @@ static const struct h_n composite_h_n[] = {
 int
 main(int argc, char *argv[])
 {
-    char *h_arg;		/* h as a string */
-    char *n_arg;		/* n as a string */
+    char *h_arg = NULL;		/* h as a string */
+    char *n_arg = NULL;		/* n as a string */
     mpz_t pow_2;		/* 2^n */
     mpz_t h_pow_2;		/* h*(2^n) */
     mpz_t riesel_cand;		/* Riesel candidate to test - n*(2^n)-1 */
-    mpz_t u_term;		/* Riesel sequence value */
+    mpz_t u_term;		/* Lucas sequence value - U(i) */
     mpz_t u_term_sq;		/* square of prev term */
     mpz_t u_term_sq_2;		/* square - 2 of prev term */
     mpz_t J;			/* used in mod calculation - u_term_sq_2 / (2^n) */
     mpz_t K;			/* used in mod calculation - u_term_sq_2 mod (2^n) */
     mpz_t J_div_h;		/* used in mod calculation - int(J/h) */
     mpz_t J_mod_h;		/* used in mod calculation - J mod h then (J mod h)*(2^n) */
+    mpz_t zero;			/* 0 as a mp value */
+    mpz_t non_zero;		/* non-0 as a mp value */
     int c;			/* option */
-    unsigned long i;		/* u term index - 1st Lucas term is U(2) = v(h) - 1st index is 2 */
-    // XXX unsigned long restored_i = 0;	/* u term index restored from checkpoint or 0 ==> test not started */
+    unsigned long i = FIRST_TERM_INDEX;	/* u term index */
     /*
-     * For Mersenne numbers, U(2) == 4
+     * For Mersenne numbers, U(FIRST_TERM_INDEX) == 4
+     * For Riesel numbers, U(FIRST_TERM_INDEX) == v(h)
      */
     unsigned long h;			/* multiplier of 2 */
     unsigned long n;			/* power of 2 */
@@ -157,7 +180,12 @@ main(int argc, char *argv[])
     int write_extended_stats = 0;	/* output extended prime stats to stderr */
     char *checkpoint_dir = NULL;	/* form checkpoint files under checkpoint_dir */
     int checkpoint_secs = DEF_CHKPT_SECS;	/* checkpoint every checkpoint_secs seconds */
-    int have_s = 0;			/* if we saw an -s secs argument */
+    unsigned long multiple = 0;			/* checkpoint when i is a multiple, 0 ==> do not */
+    bool force = false;			/* -i to force checkpoint_dir to be re-initialzed */
+    bool restore = false;		/* true --> we need to restore state from checkpoint_dir */
+    int have_s = 0;			/* if we saw an -s secs */
+    int have_i = 0;			/* if we saw an -i */
+    int have_m = 0;			/* if we saw an -m multiple argument */
     extern int optind;			/* argv index of the next arg */
     extern char *optarg;		/* optional argument */
 
@@ -165,7 +193,7 @@ main(int argc, char *argv[])
      * parse args
      */
     program = argv[0];
-    while ((c = getopt(argc, argv, "v:ctTd:s:h")) != -1) {
+    while ((c = getopt(argc, argv, "v:ctTd:is:m:h")) != -1) {
 	switch (c) {
 	case 'v':
 	    debuglevel = strtol(optarg, NULL, 0);
@@ -183,46 +211,149 @@ main(int argc, char *argv[])
 	case 'd':
 	    checkpoint_dir = optarg;
 	    break;
+	case 'i':
+	    force = true;
+	    have_i = 1;
+	    break;
 	case 's':
+	    errno = 0;
 	    checkpoint_secs = strtol(optarg, NULL, 0);
+	    if (errno != 0 || strchr(optarg, '-') != NULL || checkpoint_secs < 0) {
+		usage_err(EXIT_USAGE, __func__, "invalid argument to -s, must be a number >= 0: %s", optarg);
+		// exit(9);
+		exit(EXIT_USAGE); // NOT REACHED
+	    }
 	    have_s = 1;
+	    break;
+	case 'm':
+	    errno = 0;
+	    multiple = strtoul(optarg, NULL, 0);
+	    if (errno != 0 || strchr(optarg, '-') != NULL || !isdigit(optarg[0])) {
+		usage_err(EXIT_USAGE, __func__, "invalid argument to -m, must be a number >= 0: %s", optarg);
+		// exit(9);
+		exit(EXIT_USAGE); // NOT REACHED
+	    }
+	    have_m = 1;
 	    break;
 	case 'h':
 	    fprintf(stderr, "usage: %s %s", program, usage);
-	    exit(2);
+	    exit(EXIT_HELP); // exit(8);
+	    break;
+	case ':':
+	    usage_err(EXIT_USAGE, __func__, "missing argumen to option: -%c", optopt);
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	    break;
+	case '?':
+	    usage_err(EXIT_USAGE, __func__, "unknown option: -%c", optopt);
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
 	    break;
 	default:
-	    fprintf(stderr, "usage: %s %s", program, usage);
-	    exit(3);
+	    usage_err(EXIT_USAGE, __func__, "getopt could not parse the command line, returned: %d", c);
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	    break;
 	}
     }
     argv += (optind - 1);
     argc -= (optind - 1);
-    if (argc != 3) {
-	usage_err(4, __func__, "expected only 3 args");
-	exit(4); // NOT REACHED
+    /* determine if must restore (if h and n were not given as args */
+    switch (argc) {
+    case 3: restore = false;	// h and n given
+    	    break;
+    case 1: restore = true;	// h and n not given, must restore
+    	    break;
+    default:
+	usage_err(EXIT_USAGE, __func__, "expected 0 or 2 args");
+	// exit(9);
+	exit(EXIT_USAGE); // NOT REACHED
     }
-    if (have_s && checkpoint_dir == NULL) {
-	usage_err(5, __func__, "use of -s secs requires -d checkpoint_dir");
-	exit(5); // NOT REACHED
+    /* check for -d checkpoint_dir dependicies */
+    if (checkpoint_dir == NULL) {
+	if (have_s) {
+	    usage_err(EXIT_USAGE, __func__, "use of -s secs requires -d checkpoint_dir");
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	}
+	if (have_i) {
+	    usage_err(EXIT_USAGE, __func__, "use of -i requires -d checkpoint_dir");
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	}
+	if (have_m) {
+	    usage_err(EXIT_USAGE, __func__, "use of -m multiple requires -d checkpoint_dir");
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	}
+	if (restore == true) {
+	    usage_err(EXIT_USAGE, __func__, "FATAL: if h and n are not given, must restore using -d checkpoint_dir");
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	}
     }
-    if (checkpoint_secs < 0) {
-	usage_err(6, __func__, "secs: %d must be >= 0", checkpoint_secs);
-	exit(6); // NOT REACHED
-    }
-    h_arg = argv[1];
-    errno = 0;
-    h = strtoul(h_arg, NULL, 0);
-    if (strchr(h_arg, '-') != NULL || errno != 0 || h <= 0) {
-	usage_err(7, __func__, "FATAL: h must an integer > 0");
-	exit(7); // NOT REACHED
-    }
-    n_arg = argv[2];
-    errno = 0;
-    n = strtoul(n_arg, NULL, 0);
-    if (strchr(n_arg, '-') != NULL || errno != 0 || n <= 0) {
-	usage_err(8, __func__, "FATAL: n must an integer > 0");
-	exit(8); // NOT REACHED
+
+    /*
+     * initialize mp elements
+     *
+     * we need to initialize my elements early in case we are restoring
+     */
+    mpz_init(pow_2);
+    mpz_init(h_pow_2);
+    mpz_init(riesel_cand);
+    mpz_init(u_term);
+    mpz_init(u_term_sq);
+    mpz_init(u_term_sq_2);
+    mpz_init(J);
+    mpz_init(K);
+    mpz_init(J_div_h);
+    mpz_init(J_mod_h);
+    mpz_init(zero);
+    mpz_set_ui(zero, 0);
+    mpz_init(non_zero);
+    mpz_set_ui(non_zero, 1);
+
+    /*
+     * case: we were given an h and n to start testing
+     */
+    if (restore == false) {
+
+	/*
+	 * parse h argument
+	 */
+	h_arg = argv[1];
+	errno = 0;
+	h = strtoul(h_arg, NULL, 0);
+	if (errno != 0 || strchr(h_arg, '-') != NULL || h <= 0 || !isdigit(h_arg[0])) {
+	    usage_err(EXIT_USAGE, __func__, "FATAL: h must an integer > 0");
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	}
+
+	/*
+	 * parse n argument
+	 */
+	n_arg = argv[2];
+	errno = 0;
+	n = strtoul(n_arg, NULL, 0);
+	if (errno != 0 || strchr(h_arg, '-') != NULL || n <= 0 || !isdigit(n_arg[0])) {
+	    usage_err(EXIT_USAGE, __func__, "FATAL: n must an integer > 0");
+	    // exit(9);
+	    exit(EXIT_USAGE); // NOT REACHED
+	}
+
+    /*
+     * case: no h and n given, must obtain by restoring from the checkpoint_dir
+     */
+    } else {
+
+	/*
+	 * restore h, n, i, v1, and u_term from checkpoint_dir
+	 *
+	 * NOTE: If we cannot restore from checkpoint_dir, this function will not return.
+	 */
+	dbg(DBG_LOW, "restoring from: %s", checkpoint_dir);
+	restore_checkpoint(checkpoint_dir, &h, &n, &i, &v1, u_term);
     }
 
     /*
@@ -237,41 +368,48 @@ main(int argc, char *argv[])
      * force h to become odd
      */
     if (h % 2 == 0) {
-	dbg(DBG_LOW, "converting even h: %ld into odd by increasing n: %ld", orig_h, orig_n);
+	dbg(DBG_MED, "converting even h: %ld into odd by increasing n: %ld", orig_h, orig_n);
 	while (h % 2 == 0 && h > 0) {
 	    h >>= 1;
 	    ++n;
 	}
-	dbg(DBG_LOW, "new equivalent h: %lu and new equivalent n: %ld", h, n);
+	dbg(DBG_MED, "new equivalent h: %lu and new equivalent n: %ld", h, n);
 	if (h <= 0) {
-	    err(9, __func__, "new equivalent h: %lu <= 0", h);
-	    exit(9); // NOT REACHED
+	    err(EXIT_CANNOT_TEST, __func__, "new equivalent h: %lu <= 0", h);
+	    // exit(2);
+	    exit(EXIT_CANNOT_TEST); // NOT REACHED
 	}
     }
+    dbg(DBG_MED, "h: %lu", h);
+    dbg(DBG_MED, "n: %lu", n);
+
     /*
      * form string based on possibly modified h
      */
-    h_str[0] = '\0';		// paranoia
-    h_str[MAX_H_N_LEN] = '\0';	// paranoia
+    memset(h_str, 0, sizeof(h_str));
     errno = 0;
     h_len = snprintf(h_str, MAX_H_N_LEN, "%lu", h);
     if (h_len < 0 || h_len >= MAX_H_N_LEN) {
-	errp(10, __func__, "converting h: %lu to string via snprintf returned: %d", h, h_len);
-	exit(10); // NOT REACHED
+	usage_errp(EXIT_USAGE, __func__, "converting h: %lu to string via snprintf returned: %d", h, h_len);
+	// exit(9);
+	exit(EXIT_USAGE); // NOT REACHED
     }
     h_str[h_len] = '\0';	// paranoia
+    dbg(DBG_VHIGH, "h_len string: %s", h_str);
+
     /*
      * form string based on possibly modified n
      */
-    n_str[0] = '\0';		// paranoia
-    n_str[MAX_H_N_LEN] = '\0';	// paranoia
+    memset(n_str, 0, sizeof(n_str));
     errno = 0;
     n_len = snprintf(n_str, MAX_H_N_LEN, "%lu", n);
     if (n_len < 0 || n_len >= MAX_H_N_LEN) {
-	errp(11, __func__, "converting n: %lu to string via snprintf returned: %d", n, n_len);
-	exit(11); // NOT REACHED
+	usage_errp(EXIT_USAGE, __func__, "converting n: %lu to string via snprintf returned: %d", n, n_len);
+	// exit(9);
+	exit(EXIT_USAGE); // NOT REACHED
     }
     n_str[n_len] = '\0';	// paranoia
+    dbg(DBG_VHIGH, "n_len string: %s", n_str);
 
     /*
      * firewall - catch the special cases for small primes
@@ -291,7 +429,13 @@ main(int argc, char *argv[])
 	    } else {
 		printf("%ld * 2 ^ %ld - 1 is prime\n", orig_h, orig_n);
 	    }
-	    exit(0);
+	    /* if checkpointing, set checkpoint state to prime */
+	    if (checkpoint_dir != NULL) {
+		dbg(DBG_MED, "checkpoint state set to prime in: %s", checkpoint_dir);
+		checkpoint(checkpoint_dir, false, h, n, n, 0, zero);
+	    }
+	    dbg(DBG_LOW, "exit prime");
+	    exit(EXIT_IS_PRIME); // exit(0);
 	}
     }
 
@@ -313,7 +457,12 @@ main(int argc, char *argv[])
 	    } else {
 		printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	    }
-	    exit(1);
+	    if (checkpoint_dir != NULL) {
+		dbg(DBG_MED, "checkpoint state set to composite in: %s", checkpoint_dir);
+		checkpoint(checkpoint_dir, false, h, n, n, 0, non_zero);
+	    }
+	    dbg(DBG_LOW, "exit composite");
+	    exit(EXIT_IS_COMPOSITE); // exit(1);
 	}
     }
 
@@ -342,7 +491,12 @@ main(int argc, char *argv[])
 	} else {
 	    printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	}
-	exit(1);
+	if (checkpoint_dir != NULL) {
+	    dbg(DBG_MED, "checkpoint state set to composite in: %s", checkpoint_dir);
+	    checkpoint(checkpoint_dir, false, h, n, n, 0, non_zero);
+	}
+	dbg(DBG_LOW, "exit composite");
+	exit(EXIT_IS_COMPOSITE); // exit(1);
     }
 
     /*
@@ -363,40 +517,24 @@ main(int argc, char *argv[])
     initialize_beginrun_stats();
 
     /*
-     * initialize prime stats for the start of this primality test
-     *
-     * If we restore from a checkpoint file later on,
-     * after the checkpoint system has been initialixzed
-     * and the most recent valid checkpont file is found,
-     * we may modify the total stats as per that checkpoint.
-     * If and until that happens, we will pretend the
-     * total prime stats started with this run.
-     */
-    initialize_total_stats();
-
-    /*
-     * initialize mp elements
-     */
-    mpz_init(pow_2);
-    mpz_init(h_pow_2);
-    mpz_init(riesel_cand);
-    mpz_init(u_term);
-    mpz_init(u_term_sq);
-    mpz_init(u_term_sq_2);
-    mpz_init(J);
-    mpz_init(K);
-    mpz_init(J_div_h);
-    mpz_init(J_mod_h);
-
-    /*
      * initialize checkpoint system
      *
      * This does not perform a restore from q checkpoint file.
      * This just initializes internal data structures, sets up
      * the checkpoint timer and creates the checkpoint directory
      * if it it needed and does not exist.
+     *
+     * This call will also initialize prime stats for the start of this primality test.
+     *
+     * If we are checkpointing, a lock for the checkpoint directroy will be obtained.
+     * If the lock is busy, this function will exit and not return.
+     *
+     * If the checkpoint directory exists and contains a checkpoint, we will
+     * restore based on that checkpoint.
      */
-    initialize_checkpoint(checkpoint_dir, checkpoint_secs);
+    if (restore == false) {
+	initialize_checkpoint(checkpoint_dir, checkpoint_secs, h, n, force);
+    }
 
     /*
      * compute h*2^n-1 - our test candidate
@@ -422,56 +560,61 @@ main(int argc, char *argv[])
      * firewall - h < 2^n
      */
     if (mpz_cmp_ui(pow_2, h) < 0) {
-	err(12, __func__, "h: %lu must be < 2^n: 2^%lu", h, n);
-	exit(12); // NOT REACHED
+	err(EXIT_CANNOT_TEST, __func__, "h: %lu must be < 2^n: 2^%lu", h, n);
+	// exit(2);
+	exit(EXIT_CANNOT_TEST); // NOT REACHED
     }
 
     /*
-     * set initial u(2) value
+     * set initial u(FIRST_TERM_INDEX) value, unless we restored
      */
-    v1 = gen_u2(h, n, riesel_cand, u_term);
-    if (debuglevel >= DBG_MED) {
-	dbg(DBG_MED, "v[1] = %lu", v1);
-	if (debuglevel >= DBG_HIGH) {
-	    write_calc_mpz_hex(stderr, NULL, "u[2]", u_term);
+    if (restore == false) {
+	i = FIRST_TERM_INDEX; // we call the first Lucas term, U(2)
+	v1 = gen_u2(h, n, riesel_cand, u_term);
+	if (debuglevel >= DBG_MED) {
+	    dbg(DBG_MED, "v[1] = %lu ;", v1);
+	    if (debuglevel >= DBG_HIGH) {
+		write_calc_mpz_hex(stderr, NULL, "u[2]", u_term);
+	    }
+	    fflush(stderr); // paranoia
 	}
-	fflush(stderr); // paranoia
-    }
-    if (calc_mode) {
-	printf("print \"read lucas;\"\n");
-	printf("read lucas;\n");
-	printf("print \"v1 = gen_v1(%s, %s);\";\n", h_str, n_str);
-	printf("v1 = gen_v1(%s, %s);\n", h_str, n_str);
-	printf("print \"gmprime_v1 = %lu;\"\n", v1);
-	printf("gmprime_v1 = %lu;\n", v1);
-	printf("if (v1 == gmprime_v1) {\n");
-	printf("  print \"v[1] value set correctly\";\n");
-	printf("} else {\n");
-	printf("  print \"# ERR: v1 != gmprime_v1\";\n");
-	printf("  print \"v1 = \", v1;\n");
-	printf("  print \"gmprime_v1 = \", gmprime_v1;\n");
-	printf("  quit \"v[1] value not correctly set\";\n");
-	printf("}\n");
-	printf("v1 = gen_v1(%s, %s);\n", h_str, n_str);
-	printf("print \"u_term = gen_u2(%s, %s, v1);\";\n", h_str, n_str);
-	printf("u_term = gen_u2(%s, %s, v1);\n", h_str, n_str);
-	write_calc_mpz_hex(stdout, NULL, "gmprime_u_term", u_term);
-	printf("if (u_term == gmprime_u_term) {\n");
-	printf("  print \"u[2] value set correctly\";\n");
-	printf("} else {\n");
-	printf("  print \"# ERR: u_term != gmprime_u_term for u[2]\";\n");
-	printf("  print \"u_term = \", u_term;\n");
-	printf("  print \"gmprime_u_term = \", gmprime_u_term;\n");
-	printf("  quit \"u[2] value not correctly set\";\n");
-	printf("}\n");
-	fflush(stdout); // paranoia
-    }
+	if (calc_mode) {
+	    printf("print \"read lucas;\"\n");
+	    printf("read lucas;\n");
+	    printf("print \"v1 = gen_v1(%s, %s);\";\n", h_str, n_str);
+	    printf("v1 = gen_v1(%s, %s);\n", h_str, n_str);
+	    printf("print \"gmprime_v1 = %lu;\"\n", v1);
+	    printf("gmprime_v1 = %lu;\n", v1);
+	    printf("if (v1 == gmprime_v1) {\n");
+	    printf("  print \"v[1] value set correctly\";\n");
+	    printf("} else {\n");
+	    printf("  print \"# ERR: v1 != gmprime_v1\";\n");
+	    printf("  print \"v1 = \", v1;\n");
+	    printf("  print \"gmprime_v1 = \", gmprime_v1;\n");
+	    printf("  quit \"v[1] value not correctly set\";\n");
+	    printf("}\n");
+	    printf("v1 = gen_v1(%s, %s);\n", h_str, n_str);
+	    printf("print \"u_term = gen_u2(%s, %s, v1);\";\n", h_str, n_str);
+	    printf("u_term = gen_u2(%s, %s, v1);\n", h_str, n_str);
+	    write_calc_mpz_hex(stdout, NULL, "gmprime_u_term", u_term);
+	    printf("if (u_term == gmprime_u_term) {\n");
+	    printf("  print \"u[2] value set correctly\";\n");
+	    printf("} else {\n");
+	    printf("  print \"# ERR: u_term != gmprime_u_term for u[2]\";\n");
+	    printf("  print \"u_term = \", u_term;\n");
+	    printf("  print \"gmprime_u_term = \", gmprime_u_term;\n");
+	    printf("  quit \"u[2] value not correctly set\";\n");
+	    printf("}\n");
+	    fflush(stdout); // paranoia
+	}
 
-    /*
-     * if checkpointing, perform an initial checkpoint for U(2)
-     */
-    if (checkpoint_dir != NULL) {
-	checkpoint(checkpoint_dir, h, n, 2, u_term);
+	/*
+	 * if checkpointing, perform an initial checkpoint for U(2)
+	 */
+	if (checkpoint_dir != NULL) {
+	    dbg(DBG_MED, "checkpointing for u(2): %s", checkpoint_dir);
+	    checkpoint(checkpoint_dir, true, h, n, i, v1, u_term);
+	}
     }
 
     /*
@@ -479,7 +622,12 @@ main(int argc, char *argv[])
      *
      * u(i+1) = u(i)^2 - 2 mod 2^n-1
      */
-    for (i = 2; i < n; ++i) {
+    while (i < n) {
+
+	/*
+	 * note the Lucas term index we are computing
+	 */
+	++i;
 
 	/*
 	 * setup for next loop
@@ -494,7 +642,7 @@ main(int argc, char *argv[])
 	 * square
 	 */
 	mpz_mul(u_term_sq, u_term, u_term);
-	if (debuglevel >= DBG_HIGH) {
+	if (debuglevel >= DBG_VHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "u_term_sq", u_term_sq);
 	    fflush(stderr); // paranoia
 	}
@@ -516,7 +664,7 @@ main(int argc, char *argv[])
 	 * -2
 	 */
 	mpz_sub_ui(u_term_sq_2, u_term_sq, (unsigned long int) 2);
-	if (debuglevel >= DBG_HIGH) {
+	if (debuglevel >= DBG_VHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "u_term_sq_2", u_term_sq_2);
 	    fflush(stderr); // paranoia
 	}
@@ -552,33 +700,33 @@ main(int argc, char *argv[])
 	 * NOTE: We use 2^n above to mean 2 raised to the power of n, not xor.
 	 */
 	mpz_fdiv_q_2exp(J, u_term_sq_2, n);	// J = int(u_term_sq_2 / 2^n)
-	if (debuglevel >= DBG_VHIGH) {
+	if (debuglevel >= DBG_VVHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "J", J);
 	    fflush(stderr); // paranoia
 	}
 	mpz_tdiv_qr_ui(J_div_h, J_mod_h, J, h);	// compute both int(J/h) and (J mod h)
-	if (debuglevel >= DBG_VHIGH) {
+	if (debuglevel >= DBG_VVHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "J_div_h", J_div_h);
 	    write_calc_mpz_hex(stderr, NULL, "J_mod_h", J_mod_h);
 	    fflush(stderr); // paranoia
 	}
 	mpz_mul_2exp(J_mod_h, J_mod_h, n);	// (J mod h)*(2^n)
-	if (debuglevel >= DBG_VHIGH) {
+	if (debuglevel >= DBG_VVHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "J_mod_h_shifted", J_mod_h);
 	    fflush(stderr); // paranoia
 	}
 	mpz_fdiv_r_2exp(K, u_term_sq_2, n);	// K = bottom n bits of u_term_sq_2
-	if (debuglevel >= DBG_VHIGH) {
+	if (debuglevel >= DBG_VVHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "K", K);
 	    fflush(stderr); // paranoia
 	}
 	mpz_add(u_term, J_mod_h, K);	// int(J/h) + (J mod h)*(2^n)
-	if (debuglevel >= DBG_VHIGH) {
+	if (debuglevel >= DBG_VVHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "u_term_partial", u_term);
 	    fflush(stderr); // paranoia
 	}
 	mpz_add(u_term, u_term, J_div_h);	// u_term = u_term_sq_2 mod h*2^n-1
-	if (debuglevel >= DBG_HIGH) {
+	if (debuglevel >= DBG_VHIGH) {
 	    write_calc_mpz_hex(stderr, NULL, "u_term_mod_final", u_term);
 	    fflush(stderr); // paranoia
 	}
@@ -626,13 +774,14 @@ main(int argc, char *argv[])
 	 */
 	while (mpz_cmp(u_term, riesel_cand) >= 0) {
 	    mpz_sub(u_term, u_term, riesel_cand);
-	    if (debuglevel >= DBG_HIGH) {
+	    if (debuglevel >= DBG_VHIGH) {
 		write_calc_mpz_hex(stderr, NULL, "u_term_subtract", u_term);
 		fflush(stderr); // paranoia
 	    }
 	}
-	if (debuglevel >= DBG_MED) {
-	    write_calc_mpz_hex(stderr, NULL, "u_term", u_term);
+	if (debuglevel >= DBG_HIGH) {
+	    fprintf(stderr, "u[%ld", i);
+	    write_calc_mpz_hex(stderr, NULL, "]", u_term);
 	    fflush(stderr); // paranoia
 	}
 	if (calc_mode) {
@@ -647,6 +796,14 @@ main(int argc, char *argv[])
 	    printf("  quit \"bad mod calculation\";\n");
 	    printf("}\n");
 	    fflush(stdout); // paranoia
+	}
+
+	/*
+	 * checkpoint if checkpointing and needed
+	 */
+	if (checkpoint_dir != NULL && checkpoint_needed(h, n, i, multiple)) {
+	    dbg(DBG_MED, "checkpointing for u[%ld]: %s", i, checkpoint_dir);
+	    checkpoint(checkpoint_dir, true, h, n, i, v1, u_term);
 	}
     }
     dbg(DBG_LOW, "finished testing %lu*2^%lu-1", h, n);
@@ -682,11 +839,13 @@ main(int argc, char *argv[])
 	} else {
 	    printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	}
-	exit(1);
+	dbg(DBG_LOW, "exit composite");
+	exit(EXIT_IS_COMPOSITE); // exit(1);
     }
 
     /*
      * All Done!! -- Jessica Noll, Age 2
      */
-    exit(0);
+    dbg(DBG_LOW, "exit prime");
+    exit(EXIT_IS_PRIME); // exit(0);
 }

@@ -1,7 +1,7 @@
 /*
  * debug - debug, warning and error reporting facility
  *
- * Copyright (c) 2019 by Landon Curt Noll.  All Rights Reserved.
+ * Copyright (c) 2019-2020 by Landon Curt Noll.  All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and
  * its documentation for any purpose and without fee is hereby granted,
@@ -88,6 +88,8 @@ extern int debuglevel;			// print debug messages <= debuglevel
  */
 
 #    if defined(DEBUG_LINT) && __STDC_VERSION__ >= 199901L
+
+#	 include <stdbool.h>
 
 #        define msg(...) fprintf(stderr, __VA_ARGS__)
 #        define dbg(level, ...) ((debuglevel >= (level)) ? printf(__VA_ARGS__) : true)

@@ -1,5 +1,5 @@
 /*
- * lucas - implementaion of calc's lucas.cal in C using gmp
+ * riesel - implementaion of calc's setup functions in lucas.cal in C using gmp
  *
  * This code was converted by Konstantin Simeonov from the lucas.cal
  * calc resource file as distrivurted by calc in version 2.12.6.7.
@@ -19,7 +19,7 @@
  * Credit for C/gmp implemention: Konstantin Simeonov
  * Credit for the original lucas.cal calc implementation: Landon Curt Noll
  *
- * Copyright (c) 2018 by Konstantin Simeonov and Landon Curt Noll.  All Rights Reserved.
+ * Copyright (c) 2018-2019 by Konstantin Simeonov and Landon Curt Noll.  All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and
  * its documentation for any purpose and without fee is hereby granted,
@@ -42,9 +42,12 @@
  * Share and enjoy! :-)
  */
 
+/* NUMERIC EXIT CODES: 40-69	riesel.c - reserved for internal errors */
+
 #include <stdio.h>
 #include <limits.h>
-#include "lucas.h"
+
+#include "riesel.h"
 
 /*
  * A macro that checks if a number is odd (return true) or not (return false)

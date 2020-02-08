@@ -1,2 +1,4 @@
 gmprime
-*.out
+run
+*.pt
+run.lock

@@ -1,7 +1,7 @@
 /*
  * debug - debug, warning and error reporting facility
  *
- * Copyright (c) 2019 by Landon Curt Noll.  All Rights Reserved.
+ * Copyright (c) 2019-2020 by Landon Curt Noll.  All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and
  * its documentation for any purpose and without fee is hereby granted,
@@ -26,7 +26,8 @@
  * Share and enjoy! :-)
  */
 
-// Exit codes: none
+/* NUMERIC EXIT CODES: 250-254	debug.c - reserved for internal errors */
+/* NUMERIC EXIT CODES: 255	debug.c - FORCED_EXIT */
 // NOTE: Other code calls err() and errp() with various exit codes that may result in zero or non-zero exits
 
 #include <stdio.h>
@@ -281,12 +282,12 @@ err(int exitcode, const char *name, const char *fmt, ...)
      */
     if (exitcode >= 256) {
 	warn(__func__, "called with exitcode >= 256: %d", exitcode);
-	exitcode = FORCED_EXIT;
+	exitcode = FORCED_EXIT;	// exit(255);
 	warn(__func__, "forcing exit code: %d", exitcode);
     }
     if (exitcode < 0) {
 	warn(__func__, "called with exitcode < 0: %d", exitcode);
-	exitcode = FORCED_EXIT;
+	exitcode = FORCED_EXIT;	// exit(255);
 	warn(__func__, "forcing exit code: %d", exitcode);
     }
     if (name == NULL) {
@@ -354,12 +355,12 @@ errp(int exitcode, const char *name, const char *fmt, ...)
      */
     if (exitcode >= 256) {
 	warn(__func__, "called with exitcode >= 256: %d", exitcode);
-	exitcode = FORCED_EXIT;
+	exitcode = FORCED_EXIT;	// exit(255);
 	warn(__func__, "forcing exit code: %d", exitcode);
     }
     if (exitcode < 0) {
 	warn(__func__, "called with exitcode < 0: %d", exitcode);
-	exitcode = FORCED_EXIT;
+	exitcode = FORCED_EXIT;	// exit(255);
 	warn(__func__, "forcing exit code: %d", exitcode);
     }
     if (name == NULL) {
@@ -380,7 +381,9 @@ errp(int exitcode, const char *name, const char *fmt, ...)
 	fprintf(stderr, "[%s vfprintf returned error: %d]", __func__, ret);
     }
     fputc('\n', stderr);
-    fprintf(stderr, "errno[%d]: %s\n", saved_errno, strerror(saved_errno));
+    if (errno != 0) {
+	fprintf(stderr, "errno[%d]: %s\n", saved_errno, strerror(saved_errno));
+    }
 
     /*
      * Clean up stdarg stuff
@@ -426,7 +429,7 @@ usage_err(int exitcode, const char *name, const char *fmt, ...)
      */
     if (exitcode < 0 || exitcode >= 256) {
 	warn(__func__, "exitcode must be >= 0 && < 256: %d", exitcode);
-	exitcode = FORCED_EXIT;
+	exitcode = FORCED_EXIT;	// exit(255);
 	warn(__func__, "forcing exit code: %d", exitcode);
     }
     if (name == NULL) {
@@ -458,7 +461,7 @@ usage_err(int exitcode, const char *name, const char *fmt, ...)
     } else {
 	fprintf(stderr, "For command line usage help, try: %s -h\n", program);
     }
-    fprintf(stderr, "%s", version_string);
+    fprintf(stderr, "version: %s\n", version_string);
 
     /*
      * Clean up stdarg stuff
@@ -507,7 +510,7 @@ usage_errp(int exitcode, const char *name, const char *fmt, ...)
      */
     if (exitcode < 0 || exitcode >= 256) {
 	warn(__func__, "exitcode must be >= 0 && < 256: %d", exitcode);
-	exitcode = FORCED_EXIT;
+	exitcode = FORCED_EXIT;	// exit(255);
 	warn(__func__, "forcing exit code: %d", exitcode);
     }
     if (name == NULL) {

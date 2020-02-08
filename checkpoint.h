@@ -1,7 +1,7 @@
 /*
  * checkpoint - checkpoint and restore stilities
  *
- * Copyright (c) 2018 by Landon Curt Noll.  All Rights Reserved.
+ * Copyright (c) 2018-2020 by Landon Curt Noll.  All Rights Reserved.
  *
  * Permission to use, copy, modify, and distribute this software and
  * its documentation for any purpose and without fee is hereby granted,
@@ -32,16 +32,34 @@
 
 #include <stdint.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 
 /*
- * checkpoint fornmat version
+ * checkpoint critical constants
  */
 #define CHECKPOINT_FMT_VERSION		(2)	// current version of checkpoint files
-
 #define DEF_CHKPT_SECS			(3600)	// default checkpoint interval
-
-#define DEF_DIR_MODE			(0775)	// default directory creation mode / permission
+#define DEF_DIR_MODE			(0770)	// default directory creation mode / permission
+#define CHKPT_FILE_MODE			(S_IRUSR|S_IRGRP)	// default checkpoint file mode is 0440
+#define ULONG_MAX_DIGITS		(20)	// 2^64-1 as an unsigned long is 20 decimal digits long
+#define CHECKPOINT_PREVIEW		(1024)	// checkpoint U(N-CHECKPOINT_PREVIEW)
+/**/
+#define LOCK_FILE			"run.lock"	// lock file name in checkpoint directory
+/**/
+#define CHKPT_CUR_FILE			"chk.cur.pt"	// current checkpoint file
+#define CHKPT_PREV0_FILE		"chk.prev-0.pt"	// previous checkpoint file
+#define CHKPT_PREV1_FILE		"chk.prev-1.pt"	// previous to previous checkpoint file
+#define CHKPT_PREV2_FILE		"chk.prev-2.pt"	// previous to previous to previous checkpoint file
+/**/
+#define SAVE_FIRST_FILE			"sav.u2.pt"	// initial checkpoint file that is saved
+#define SAVE_NEAR_FILE			"sav.near.pt"	// checkpoint that is CHECKPOINT_PREVIEW from end that is saved
+#define SAVE_N1_FILE			"sav.n-1.pt"	// checkpoint that is next to last that is saved
+#define SAVE_END_FILE			"sav.end.pt"	// checkpoint that is at the very end that is saved
+/**/
+#define RESULT_PRIME_FILE		"result.prime.pt"	// checkpoint for a number proven to be prime
+#define RESULT_COMPOSITE_FILE		"result.composite.pt"	// checkpoint for a number proven to be NOT prime
+#define RESULT_ERROR_FILE		"result.error.pt"	// fatal error - number cannot be tested
 
 
 /*
@@ -93,11 +111,14 @@ extern void write_calc_mpz_hex(FILE *stream, char *basename, char *subname, cons
 extern void write_calc_int64_t(FILE *stream, char *basename, char *subname, const int64_t value);
 extern void write_calc_uint64_t(FILE *stream, char *basename, char *subname, const uint64_t value);
 extern void write_calc_str(FILE *stream, char *basename, char *subname, const char *value);
-extern void write_calc_prime_stats(FILE *stream, int extended);
-extern void initialize_checkpoint(char *checkpoint_dir, int checkpoint_secs);
+extern void write_calc_prime_stats(FILE *stream, bool extended);
+extern void initialize_checkpoint(char *checkpoint_dir, int checkpoint_secs, unsigned long h, unsigned long n, bool force);
 extern void initialize_beginrun_stats(void);
-extern void initialize_total_stats(void);
 extern void update_stats(void);
-extern void checkpoint(const char *checkpoint_dir, unsigned long h, unsigned long n, unsigned long i, mpz_t u_term);
+extern bool checkpoint_needed(unsigned long h, unsigned long n, unsigned long i, unsigned long multiple);
+extern void checkpoint(const char *checkpoint_dir, bool valid_test, unsigned long h, unsigned long n, unsigned long i,
+		       unsigned long v1, mpz_t u_term);
+extern void restore_checkpoint(const char *checkpoint_dir, unsigned long *h, unsigned long *n, unsigned long *i,
+			       unsigned long *v1, mpz_t u_term);
 
 #endif				/* !INCLUDE_CHECKPOINT_H */
