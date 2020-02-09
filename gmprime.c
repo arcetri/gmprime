@@ -74,7 +74,7 @@
  * globals
  */
 const char *program = NULL;	/* our name */
-const char version_string[] = "gmprime-3.1";	/* package name and version */
+const char version_string[] = "gmprime-3.1.1";	/* package name and version */
 int debuglevel = DBG_NONE;	/* if > 0 then be verbose */
 static const char *usage = "[-v level] [-c] [-t] [-T] [-d checkpoint_dir [-i] [-s secs] [-m multiple]] [-h] [h n]\n"
     "\n"
@@ -183,9 +183,9 @@ main(int argc, char *argv[])
     unsigned long multiple = 0;			/* checkpoint when i is a multiple, 0 ==> do not */
     bool force = false;			/* -i to force checkpoint_dir to be re-initialzed */
     bool restore = false;		/* true --> we need to restore state from checkpoint_dir */
-    int have_s = 0;			/* if we saw an -s secs */
-    int have_i = 0;			/* if we saw an -i */
-    int have_m = 0;			/* if we saw an -m multiple argument */
+    bool have_s = false;		/* if we saw an -s secs */
+    bool have_i = false;		/* if we saw an -i */
+    bool have_m = false;		/* if we saw an -m multiple */
     extern int optind;			/* argv index of the next arg */
     extern char *optarg;		/* optional argument */
 
@@ -213,7 +213,7 @@ main(int argc, char *argv[])
 	    break;
 	case 'i':
 	    force = true;
-	    have_i = 1;
+	    have_i = true;
 	    break;
 	case 's':
 	    errno = 0;
@@ -223,7 +223,7 @@ main(int argc, char *argv[])
 		// exit(9);
 		exit(EXIT_USAGE); // NOT REACHED
 	    }
-	    have_s = 1;
+	    have_s = true;
 	    break;
 	case 'm':
 	    errno = 0;
@@ -233,7 +233,7 @@ main(int argc, char *argv[])
 		// exit(9);
 		exit(EXIT_USAGE); // NOT REACHED
 	    }
-	    have_m = 1;
+	    have_m = true;
 	    break;
 	case 'h':
 	    fprintf(stderr, "usage: %s %s", program, usage);
@@ -286,7 +286,7 @@ main(int argc, char *argv[])
 	    // exit(9);
 	    exit(EXIT_USAGE); // NOT REACHED
 	}
-	if (restore == true) {
+	if (restore) {
 	    usage_err(EXIT_USAGE, __func__, "FATAL: if h and n are not given, must restore using -d checkpoint_dir");
 	    // exit(9);
 	    exit(EXIT_USAGE); // NOT REACHED
@@ -314,9 +314,22 @@ main(int argc, char *argv[])
     mpz_set_ui(non_zero, 1);
 
     /*
+     * case: no h and n given, must obtain by restoring from the checkpoint_dir
+     */
+    if (restore) {
+
+	/*
+	 * restore h, n, i, v1, and u_term from checkpoint_dir
+	 *
+	 * NOTE: If we cannot restore from checkpoint_dir, this function will not return.
+	 */
+	dbg(DBG_LOW, "restoring from: %s", checkpoint_dir);
+	restore_checkpoint(checkpoint_dir, &h, &n, &i, &v1, u_term);
+
+    /*
      * case: we were given an h and n to start testing
      */
-    if (restore == false) {
+    } else {
 
 	/*
 	 * parse h argument
@@ -341,19 +354,6 @@ main(int argc, char *argv[])
 	    // exit(9);
 	    exit(EXIT_USAGE); // NOT REACHED
 	}
-
-    /*
-     * case: no h and n given, must obtain by restoring from the checkpoint_dir
-     */
-    } else {
-
-	/*
-	 * restore h, n, i, v1, and u_term from checkpoint_dir
-	 *
-	 * NOTE: If we cannot restore from checkpoint_dir, this function will not return.
-	 */
-	dbg(DBG_LOW, "restoring from: %s", checkpoint_dir);
-	restore_checkpoint(checkpoint_dir, &h, &n, &i, &v1, u_term);
     }
 
     /*
@@ -532,7 +532,7 @@ main(int argc, char *argv[])
      * If the checkpoint directory exists and contains a checkpoint, we will
      * restore based on that checkpoint.
      */
-    if (restore == false) {
+    if (!restore) {
 	initialize_checkpoint(checkpoint_dir, checkpoint_secs, h, n, force);
     }
 
@@ -568,7 +568,7 @@ main(int argc, char *argv[])
     /*
      * set initial u(FIRST_TERM_INDEX) value, unless we restored
      */
-    if (restore == false) {
+    if (!restore) {
 	i = FIRST_TERM_INDEX; // we call the first Lucas term, U(2)
 	v1 = gen_u2(h, n, riesel_cand, u_term);
 	if (debuglevel >= DBG_MED) {

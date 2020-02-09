@@ -62,8 +62,7 @@
  * checkpoint flags
  */
 uint64_t checkpoint_alarm = 0;		/* != 0 ==> a SIGALRM or SIGVTALRM went off, checkpoint and continue */
-// XXX - catch SIGHUP and perhaps other signals?
-uint64_t checkpoint_and_end = 0;	/* != 0 ==> a SIGINT went off, checkpoint and exit */
+uint64_t checkpoint_and_end = 0;	/* != 0 ==> a SIGHUP, SIGINT, SIGQUIT, SIGPIPE went off, checkpoint and exit */
 
 /*
  * checkpoint strings values
@@ -85,8 +84,7 @@ static struct prime_stats total;	/* updated total prime stats since start of the
  * static functions
  */
 static void record_sigalarm(int signum);
-static void record_sigint(int signum);
-static void record_sighup(int signum);
+static void record_signal_and_exit(int signum);
 static void zerosize_stats(struct prime_stats *ptr);
 static void load_prime_stats(struct prime_stats *ptr);
 static void careful_write(const char *calling_funcion_name, FILE *stream, char *fmt, ...);
@@ -100,7 +98,7 @@ static void setup_chkpt_links(unsigned long h, unsigned long n, unsigned long i,
 
 
 /*
- * record_sigalarm - record a SIGALRM
+ * record_sigalarm - record a SIGALRM, SIGVTALRM
  *
  * given:
  *      signum          the signal that has been delivered
@@ -146,12 +144,12 @@ record_sigalarm(int signum)
 
 
 /*
- * record_sigint - record a SIGINT
+ * record_signal_and_exit - record a SIGHUP, SIGINT, SIGQUIT, SIGPIPE
  *
  * given:
  *      signum          the signal that has been delivered
  *
- * This is the signal handler for the SIGINT.
+ * This is the signal handler for SIGHUP, SIGINT, SIGQUIT, SIGPIPE.
  * It sets the checkpoint_alarm value to 1 and returns.
  *
  * Another function at a time may consult the checkpoint_alarm
@@ -162,63 +160,25 @@ record_sigalarm(int signum)
  * This function does not return on error.
  */
 static void
-record_sigint(int signum)
+record_signal_and_exit(int signum)
 {
     /*
      * note when non-SIGALRM is received
      */
-    if (signum != SIGINT) {
+    switch (signum) {
+    case SIGHUP:
+	break;
+    case SIGINT:
+	break;
+    case SIGQUIT:
+	break;
+    case SIGPIPE:
+	break;
+    default:
 	fflush(stdout);
 	fflush(stderr);
-	err(71, __func__, "non-SIGINT detected: %d", signum);
-	return;	// NOT REACHED
-    }
-
-    /*
-     * checkpoint at next opportunity and then exit
-     */
-    if (checkpoint_and_end) {
-	fflush(stdout);
-	fflush(stderr);
-	dbg(DBG_LOW, "previous checkpoint_and_end value not cleared: %ld", checkpoint_and_end);
-    }
-    ++checkpoint_and_end;
-    if (checkpoint_and_end <= 0) {
-	fflush(stdout);
-	fflush(stderr);
-	dbg(DBG_LOW, "checkpoint_and_end counter wraparound, reset to 1");
-	checkpoint_and_end = 1;
-    }
-    return;
-}
-
-
-/*
- * record_sighup - record a SIGHUP
- *
- * given:
- *      signum          the signal that has been delivered
- *
- * This is the signal handler for the SIGHUP.
- * It sets the checkpoint_alarm value to 1 and returns.
- *
- * Another function at a time may consult the checkpoint_alarm
- * value and perform the checkpoint as needed and then exit.
- * This function does not exit. It is the responbility of
- * the appropriate checkpoint function to exit.
- *
- * This function does not return on error.
- */
-static void
-record_sighup(int signum)
-{
-    /*
-     * note when non-SIGALRM is received
-     */
-    if (signum != SIGHUP) {
-	fflush(stdout);
-	fflush(stderr);
-	err(71, __func__, "non-SIGHUP detected: %d", signum);
+	err(71, __func__, "unexpected signal caught: %d", signum);
+	// exit(71);
 	return;	// NOT REACHED
     }
 
@@ -1601,8 +1561,12 @@ setup_checkpoint(char *checkpoint_dir, int checkpoint_secs)
 
     /*
      * write execution info into the lock file
+     *
+     * While we are not required to do this, we write the strings
+     * in generally the same order as a checkpoint *.pt file.
      */
-    write_calc_int64_t(stream, NULL, "version", CHECKPOINT_FMT_VERSION);
+    write_calc_int64_t(stream, NULL, "format", CHECKPOINT_FMT_VERSION);
+    write_calc_str(stream, NULL, "version", version_string);
     hostname[HOST_NAME_MAX] = '\0'; // paranoia
     write_calc_str(stream, NULL, "hostname", hostname);
     cwd[HOST_NAME_MAX] = '\0'; // paranoia
@@ -1616,7 +1580,7 @@ setup_checkpoint(char *checkpoint_dir, int checkpoint_secs)
     fflush(stream); // paranoia
 
     /*
-     * setup SIGALRM and SIGVTALRM handler
+     * setup SIGALRM handler
      */
     checkpoint_alarm = 0;
     psa.sa_handler = record_sigalarm;
@@ -1628,6 +1592,10 @@ setup_checkpoint(char *checkpoint_dir, int checkpoint_secs)
 	errp(85, __func__, "cannot sigaction SIGALRM, errno: %d", errno);
 	return;	// NOT REACHED
     }
+
+    /*
+     * setup SIGVTALRM handler
+     */
     psa.sa_handler = record_sigalarm;
     sigemptyset(&psa.sa_mask);
     psa.sa_flags = 0;
@@ -1639,10 +1607,24 @@ setup_checkpoint(char *checkpoint_dir, int checkpoint_secs)
     }
 
     /*
+     * setup SIGHUP handler
+     */
+    checkpoint_and_end = 0;
+    psa.sa_handler = record_signal_and_exit;
+    sigemptyset(&psa.sa_mask);
+    psa.sa_flags = 0;
+    errno = 0;
+    ret = sigaction(SIGHUP, &psa, NULL);
+    if (ret != 0) {
+	errp(85, __func__, "cannot sigaction SIGHUP, errno: %d", errno);
+	return;	// NOT REACHED
+    }
+
+    /*
      * setup SIGINT handler
      */
     checkpoint_and_end = 0;
-    psa.sa_handler = record_sigint;
+    psa.sa_handler = record_signal_and_exit;
     sigemptyset(&psa.sa_mask);
     psa.sa_flags = 0;
     errno = 0;
@@ -1653,16 +1635,30 @@ setup_checkpoint(char *checkpoint_dir, int checkpoint_secs)
     }
 
     /*
-     * setup SIGHUP handler
+     * setup SIGQUIT handler
      */
     checkpoint_and_end = 0;
-    psa.sa_handler = record_sighup;
+    psa.sa_handler = record_signal_and_exit;
     sigemptyset(&psa.sa_mask);
     psa.sa_flags = 0;
     errno = 0;
-    ret = sigaction(SIGHUP, &psa, NULL);
+    ret = sigaction(SIGQUIT, &psa, NULL);
     if (ret != 0) {
-	errp(85, __func__, "cannot sigaction SIGHUP, errno: %d", errno);
+	errp(85, __func__, "cannot sigaction SIGQUIT, errno: %d", errno);
+	return;	// NOT REACHED
+    }
+
+    /*
+     * setup SIGPIPE handler
+     */
+    checkpoint_and_end = 0;
+    psa.sa_handler = record_signal_and_exit;
+    sigemptyset(&psa.sa_mask);
+    psa.sa_flags = 0;
+    errno = 0;
+    ret = sigaction(SIGPIPE, &psa, NULL);
+    if (ret != 0) {
+	errp(85, __func__, "cannot sigaction SIGPIPE, errno: %d", errno);
 	return;	// NOT REACHED
     }
 
@@ -1710,8 +1706,8 @@ setup_checkpoint(char *checkpoint_dir, int checkpoint_secs)
  * 	 is treated as a condition that requires a checkpoint.
  *
  * A checkpoint is needed:
- * 	a SIGALRM signal was received
- * 	a SIGINT signal was received
+ * 	a SIGALRM or SIGVTALRM signal was received
+ * 	a SIGHUP, SIGINT, SIGQUIT, SIGPIPE signal was received
  * 	when h is a bogus value
  * 	when n is a bogus value
  * 	at the start of the first Lucas sequence U(2) == v(h)
@@ -1840,6 +1836,7 @@ setup_chkpt_links(unsigned long h, unsigned long n, unsigned long i, mpz_t u_ter
 	    /*
 	     * we were called with i > n and no u_term setop
 	     */
+	    warn(__func__, "i: %ld >= n %ld with u_term as NULL", i, n);
 	    dbg(DBG_LOW, "ln %s %s", CHKPT_CUR_FILE, RESULT_ERROR_FILE);
 	    f_ret = link(CHKPT_CUR_FILE, RESULT_ERROR_FILE);
 	    if (f_ret != 0) {
@@ -1871,7 +1868,10 @@ setup_chkpt_links(unsigned long h, unsigned long n, unsigned long i, mpz_t u_ter
 	} else {
 
 	    /*
-	     * not prime .. oh well
+	     * not prime .. Oh well, maybe next time!
+	     *
+	     * "Happiness is just around the corner!"
+	     *		-- D. H. Lehmer
 	     *
 	     * link CHKPT_CUR_FILE to RESULT_COMPOSITE_FILE
 	     */
@@ -1991,8 +1991,8 @@ checkpoint(const char *checkpoint_dir, bool valid_test, unsigned long h, unsigne
     }
     if (valid_test) {
 	/* this is a valid test, so i and v1 must be valid too */
-	if (i < 2) {
-	    err(87, __func__, "i: %lu must be >= 2", i);
+	if (i < FIRST_TERM_INDEX) {
+	    err(87, __func__, "i: %lu must be >= %d", i, FIRST_TERM_INDEX);
 	    return;	// NOT REACHED
 	}
 	if (i > n) {
@@ -2095,8 +2095,20 @@ checkpoint(const char *checkpoint_dir, bool valid_test, unsigned long h, unsigne
 
     /*
      * Version checkpoint format is always written first to the checkpoint file.
+     *
+     * The string:
+     *
+     *	 	format = 2 ;\n
+     *
+     * is always written at the start of a checkpoint file, where "2"
+     * is the decimal value of CHECKPOINT_FMT_VERSION.
      */
-    write_calc_int64_t(stream, NULL, "version", CHECKPOINT_FMT_VERSION);
+    write_calc_int64_t(stream, NULL, "format", CHECKPOINT_FMT_VERSION);
+
+    /*
+     * write version of gmprime
+     */
+    write_calc_str(stream, NULL, "version", version_string);
 
     /*
      * write hostname
@@ -2209,7 +2221,7 @@ checkpoint(const char *checkpoint_dir, bool valid_test, unsigned long h, unsigne
  * restore_checkpoint - restore state from a checkpoint directory
  *
  * given:
- *      checkpoint_dir        directory under which checkpoint files will be created
+ *      checkpoint_dir	directory under which checkpoint files will be created
  *      h               pointer to multiplier of 2
  *      n               pointer to power of 2
  *      i               pointer to Lucas sequence index
