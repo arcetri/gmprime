@@ -109,19 +109,23 @@ small_composite_check: gmprime test/h-n.small-composite.txt
 	cat test/h-n.small-composite.txt | while read h n; do \
            ./gmprime "$$h" "$$n"; \
            status="$$?"; \
-           if [[ $$status -eq 0 ]]; then \
+           if [[ $$status -ne 1 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 med_composite_check: gmprime test/h-n.small-composite.txt test/h-n.med-composite.txt
 	cat test/h-n.small-composite.txt test/h-n.med-composite.txt | while read h n; do \
            ./gmprime "$$h" "$$n"; \
            status="$$?"; \
-           if [[ $$status -eq 0 ]]; then \
+           if [[ $$status -ne 1 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 # checks using the individual test lists in the test sub-directory
 #
@@ -132,44 +136,66 @@ test_check: gmprime test/h-n.test.txt
            ./gmprime "$$h" "$$n"; \
            status="$$?"; \
            if [[ $$status -ne 0 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 small_check: gmprime test/h-n.small.txt
 	cat test/h-n.small.txt | while read h n; do \
-           if ! ./gmprime "$$h" "$$n"; then \
+           ./gmprime "$$h" "$$n"; \
+           status="$$?"; \
+           if [[ $$status -ne 0 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 med_check: gmprime test/h-n.med.txt
 	cat test/h-n.med.txt | while read h n; do \
-           if ! ./gmprime "$$h" "$$n"; then \
+           ./gmprime "$$h" "$$n"; \
+           status="$$?"; \
+           if [[ $$status -ne 0 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 large_check: gmprime test/h-n.large.txt
 	cat test/h-n.large.txt | while read h n; do \
-           if ! ./gmprime "$$h" "$$n"; then \
+           ./gmprime "$$h" "$$n"; \
+           status="$$?"; \
+           if [[ $$status -ne 0 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 vlarge_check: gmprime test/h-n.vlarge.txt
 	cat test/h-n.vlarge.txt | while read h n; do \
-           if ! ./gmprime "$$h" "$$n"; then \
+           ./gmprime "$$h" "$$n"; \
+           status="$$?"; \
+           if [[ $$status -ne 1 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 huge_check: gmprime test/h-n.huge.txt
 	cat test/h-n.huge.txt | while read h n; do \
-           if ! ./gmprime "$$h" "$$n"; then \
+           ./gmprime "$$h" "$$n"; \
+           status="$$?"; \
+           if [[ $$status -ne 1 ]]; then \
+	       echo "FATAL: test $@ for h: $$h n: $$n had unexpected exit code: $$status"; \
                exit 1; \
            fi; \
-       done
+	done
+	@echo "passed test: $@"
 
 clean:
 	rm -f ${OBJECTS}

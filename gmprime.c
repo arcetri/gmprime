@@ -3,7 +3,7 @@
  *
  * usage:
  *
- *      gmprime [-v level] [-c] [-t] [-T] [-d checkpoint_dir [-i]] [-s secs] [-h] [h n]
+ *      gmprime [-v level] [-q] [-c] [-t] [-T] [-d checkpoint_dir [-i] [-s secs] [-m multiple]] [-h] [h n]
  *
  * See the usage message for details.
  *
@@ -74,12 +74,13 @@
  * globals
  */
 const char *program = NULL;	/* our name */
-const char version_string[] = "gmprime-3.1.1";	/* package name and version */
+const char version_string[] = "gmprime-3.1.2";	/* package name and version */
 int debuglevel = DBG_NONE;	/* if > 0 then be verbose */
-static const char *usage = "[-v level] [-c] [-t] [-T] [-d checkpoint_dir [-i] [-s secs] [-m multiple]] [-h] [h n]\n"
+static const char *usage = "[-v level] [-q] [-c] [-t] [-T] [-d checkpoint_dir [-i] [-s secs] [-m multiple]] [-h] [h n]\n"
     "\n"
     "	-v level	verbosity level, debug msgs go to stderr (def: output only the test result to stdout)\n"
     "\n"
+    "	-q		quite mode, do not announce if the number if prime or composite (def: do)\n"
     "	-c		output to stdout, calc code that may be used to verify partial results\n"
     "			    NOTE: example: gmprime -c 15 31 | calc -p\n"
     "			    NOTE: For info on calc, see: http://www.isthe.com/chongo/tech/comp/calc/index.html\n"
@@ -183,9 +184,10 @@ main(int argc, char *argv[])
     unsigned long multiple = 0;			/* checkpoint when i is a multiple, 0 ==> do not */
     bool force = false;			/* -i to force checkpoint_dir to be re-initialzed */
     bool restore = false;		/* true --> we need to restore state from checkpoint_dir */
-    bool have_s = false;		/* if we saw an -s secs */
+    bool quiet = false;			/* if we saw a -q */
+    bool have_s = false;		/* if we saw a -s secs */
     bool have_i = false;		/* if we saw an -i */
-    bool have_m = false;		/* if we saw an -m multiple */
+    bool have_m = false;		/* if we saw a -m multiple */
     extern int optind;			/* argv index of the next arg */
     extern char *optarg;		/* optional argument */
 
@@ -193,10 +195,13 @@ main(int argc, char *argv[])
      * parse args
      */
     program = argv[0];
-    while ((c = getopt(argc, argv, "v:ctTd:is:m:h")) != -1) {
+    while ((c = getopt(argc, argv, "v:qctTd:is:m:h")) != -1) {
 	switch (c) {
 	case 'v':
 	    debuglevel = strtol(optarg, NULL, 0);
+	    break;
+	case 'q':
+	    quiet = 1;
 	    break;
 	case 'c':
 	    calc_mode = 1;
@@ -426,7 +431,7 @@ main(int argc, char *argv[])
 		printf("print \"%s: origianl test: %ld * 2 ^ %ld - 1 =\", (%ld * 2 ^ %ld - 1);\n",
 		       program, orig_h, orig_n, orig_h, orig_n);
 		printf("print \"%s: %lu * 2 ^ %lu - 1 =\", (%lu * 2 ^ %lu - 1), \"is prime\";\n", program, h, n, h, n);
-	    } else {
+	    } else if (!quiet) {
 		printf("%ld * 2 ^ %ld - 1 is prime\n", orig_h, orig_n);
 	    }
 	    /* if checkpointing, set checkpoint state to prime */
@@ -454,7 +459,7 @@ main(int argc, char *argv[])
 		printf("print \"%s: origianl test: %ld * 2 ^ %ld - 1 =\", (%ld * 2 ^ %ld - 1);\n",
 		       program, orig_h, orig_n, orig_h, orig_n);
 		printf("print \"%s: %ld * 2 ^ %ld - 1 is composite\";\n", program, orig_h, orig_n);
-	    } else {
+	    } else if (!quiet) {
 		printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	    }
 	    if (checkpoint_dir != NULL) {
@@ -488,7 +493,7 @@ main(int argc, char *argv[])
 	    printf("mod3 = ((%ld * 2 ^ %ld - 1) %% 3);\n", orig_h, orig_n);
 	    printf("if (mod3 == 0) { print \"value mod 3:\", mod3; } else { print \"failed: mod 3 != 0:\", mod3 };\n");
 	    printf("print \"%s: %ld * 2 ^ %ld - 1 is composite\";\n", program, orig_h, orig_n);
-	} else {
+	} else if (!quiet) {
 	    printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	}
 	if (checkpoint_dir != NULL) {
@@ -829,14 +834,14 @@ main(int argc, char *argv[])
 	if (calc_mode) {
 	    printf("if (u_term == 0) { print \"u[%ld] == 0\"; } else { print \"ERROR: u[%ld] != 0\"; }\n", i, i);
 	    printf("print \"%s: %ld * 2 ^ %ld - 1 is prime\";\n", program, orig_h, orig_n);
-	} else {
+	} else if (!quiet) {
 	    printf("%ld * 2 ^ %ld - 1 is prime\n", orig_h, orig_n);
 	}
     } else {
 	if (calc_mode) {
 	    printf("if (u_term != 0) { print \"u[%ld] != 0\"; } else { print \"ERROR: u[%ld] != 0\"; }\n", i, i);
 	    printf("print \"%s: %ld * 2 ^ %ld - 1 is composite\";\n", program, orig_h, orig_n);
-	} else {
+	} else if (!quiet) {
 	    printf("%ld * 2 ^ %ld - 1 is composite\n", orig_h, orig_n);
 	}
 	dbg(DBG_LOW, "exit composite");
